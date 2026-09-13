@@ -1,0 +1,10 @@
+services:
+  lagerist:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=file:./data/lagerist.db
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped

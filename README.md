@@ -1,36 +1,43 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Lagerist
 
-## Getting Started
+Schlanke, selbst gehostete Lagerverwaltung ohne Nutzerverwaltung. Locations
+(verschachtelbar) enthalten Container, Container enthalten Items, Items können
+Unteritems haben. Jede Entity kann Fotos, Dateianhänge, Tags und Vorlagen-Felder
+haben, bekommt einen QR-Code und ist über die Volltextsuche auffindbar.
 
-First, run the development server:
+## Stack
+
+- Next.js (App Router, TypeScript) — UI, API-Routen und Server Actions in einer Codebase
+- Prisma ORM + SQLite (`data/lagerist.db`)
+- SQLite FTS5 für die Volltextsuche
+- Tailwind CSS + DaisyUI (Dracula-Theme)
+- `qrcode` für QR-Code-Erzeugung, `jsqr` für den Kamera-Scan
+
+## Entwicklung
 
 ```bash
+npm install
+npx prisma migrate deploy   # legt data/lagerist.db an
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Die App läuft dann unter [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Produktion mit Docker
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+docker compose up --build
+```
 
-## Learn More
+`data/` wird als Volume gemountet und enthält die SQLite-Datenbank sowie alle
+hochgeladenen Fotos/Dateien — das ist alles, was für ein Backup gesichert
+werden muss.
 
-To learn more about Next.js, take a look at the following resources:
+## Features
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Entity-Typen Location, Container, Item (mit Unteritems), inkl. verschachtelbarer Locations
+- Vorlagen mit frei definierbaren Feldern (Text/Zahl/Datum/Ja-Nein) pro Entity-Typ
+- Foto- und Dateianhänge, Tags, QR-Code je Entity
+- Volltextsuche über Name, Beschreibung, Tags und Vorlagen-Feldwerte
+- Dashboard mit Kennzahlen und zuletzt geänderten Entities
+- QR-Code-Scan per Kamera (`/scan`) und druckbare Label-Bögen (`/labels`)
