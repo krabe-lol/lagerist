@@ -40,6 +40,7 @@ Belege für das allgemeine Phänomen (nicht Lagerist-spezifisch):
 
 - [Mozilla Bugzilla #868937 — "Taking a camera picture causes page reload because of lack of RAM"](https://bugzilla.mozilla.org/show_bug.cgi?id=868937)
 - [Android 14 & 15 File Inputs: Why the Camera Option is Missing in Chrome and How to Fix It](https://blog.addpipe.com/html-file-input-accept-video-camera-option-is-missing-android-14-15/)
+- [flutter_inappwebview #2313 — identisches Symptom (Kamera öffnet, Foto aufgenommen, "OK" getippt, Foto kommt nie am File-Input an) in einer anderen Android-WebView-Implementierung, geschlossen ohne dokumentierte Lösung](https://github.com/pichillilorenzo/flutter_inappwebview/issues/2313)
 
 ### Was schon ausprobiert/ausgeschlossen wurde
 
