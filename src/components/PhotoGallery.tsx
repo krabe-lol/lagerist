@@ -52,7 +52,7 @@ export default function PhotoGallery({
     <>
       <div className="mb-3 flex flex-wrap gap-3">
         {photos.map((photo, index) => (
-          <div key={photo.id} className="group relative">
+          <div key={photo.id} className="relative">
             <button
               type="button"
               onClick={() => setOpenIndex(index)}
@@ -70,15 +70,15 @@ export default function PhotoGallery({
               action={deleteAttachmentAction}
               confirmMessage={`Foto "${photo.filename}" wirklich löschen?`}
               hiddenFields={{ entityType, entityId, attachmentId: photo.id }}
-              className="absolute top-1 right-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+              className="absolute top-0 right-0"
             >
               <button
                 type="submit"
-                className="btn btn-circle btn-error btn-xs hover:border-error hover:bg-white hover:text-error"
+                className="btn btn-circle btn-error btn-sm hover:border-error hover:bg-white hover:text-error"
                 aria-label="Foto löschen"
                 title="Löschen"
               >
-                <Trash2 className="h-3.5 w-3.5" />
+                <Trash2 className="h-4 w-4" />
               </button>
             </ConfirmDeleteForm>
           </div>

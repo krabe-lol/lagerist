@@ -1,3 +1,4 @@
+import { Trash2 } from "lucide-react";
 import type { EntityType } from "@/lib/constants";
 import { deleteAttachmentAction } from "@/lib/attachment-actions";
 import PhotoGallery from "@/components/PhotoGallery";
@@ -65,8 +66,13 @@ export default function AttachmentSection({
                   confirmMessage={`Datei "${file.filename}" wirklich löschen?`}
                   hiddenFields={{ entityType, entityId, attachmentId: file.id }}
                 >
-                  <button className="btn btn-outline btn-error btn-xs" type="submit">
-                    Löschen
+                  <button
+                    type="submit"
+                    className="btn btn-circle btn-error btn-sm hover:border-error hover:bg-white hover:text-error"
+                    aria-label="Datei löschen"
+                    title="Löschen"
+                  >
+                    <Trash2 className="h-4 w-4" />
                   </button>
                 </ConfirmDeleteForm>
               </div>
