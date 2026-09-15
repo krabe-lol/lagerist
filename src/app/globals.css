@@ -88,3 +88,36 @@ body {
     display: none !important;
   }
 }
+
+/* Lightbox transition: direction always matches the arrow the user pressed,
+   never derived from the photo's index (so wrapping around the list's ends
+   still animates the way the arrow points, not the "shortest" index jump). */
+@keyframes lightbox-slide-next {
+  from {
+    transform: translateX(24px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes lightbox-slide-prev {
+  from {
+    transform: translateX(-24px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.lightbox-slide-next {
+  animation: lightbox-slide-next 200ms ease-out;
+}
+
+.lightbox-slide-prev {
+  animation: lightbox-slide-prev 200ms ease-out;
+}

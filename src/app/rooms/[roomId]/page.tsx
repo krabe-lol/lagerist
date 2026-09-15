@@ -73,7 +73,6 @@ export default async function RoomDetailPage({
                     <AttachmentSection
                       entityType="LOCATION"
                       entityId={room.id}
-                      primaryPhotoId={room.primaryPhotoId}
                       attachments={room.attachments}
                     />
                   ),

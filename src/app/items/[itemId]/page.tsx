@@ -94,7 +94,6 @@ export default async function ItemDetailPage({
                 <AttachmentSection
                   entityType="ITEM"
                   entityId={item.id}
-                  primaryPhotoId={item.primaryPhotoId}
                   attachments={item.attachments}
                 />
               ),

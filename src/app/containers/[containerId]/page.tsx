@@ -85,7 +85,6 @@ export default async function ContainerDetailPage({
                     <AttachmentSection
                       entityType="CONTAINER"
                       entityId={container.id}
-                      primaryPhotoId={container.primaryPhotoId}
                       attachments={container.attachments}
                     />
                   ),
