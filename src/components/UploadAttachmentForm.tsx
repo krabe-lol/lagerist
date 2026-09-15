@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import type { AttachmentKind, EntityType } from "@/lib/constants";
 
@@ -14,11 +14,6 @@ const REJECT_MESSAGE: Record<AttachmentKind, string> = {
   FILE: "Nur PDF- oder Bilddateien (JPEG, PNG, GIF, WebP) sind als Dateianhang erlaubt.",
 };
 
-const CTA: Record<AttachmentKind, string> = {
-  PHOTO: "Foto hochladen",
-  FILE: "Datei hochladen",
-};
-
 export default function UploadAttachmentForm({
   entityType,
   entityId,
@@ -29,17 +24,23 @@ export default function UploadAttachmentForm({
   kind: AttachmentKind;
 }) {
   const router = useRouter();
-  const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
-  async function handleUpload() {
-    const file = inputRef.current?.files?.[0];
+  // Reads the file straight from the change event and uploads immediately,
+  // rather than selecting it now and reading it back later from a ref on a
+  // separate "Upload" button click: on mobile, returning from the native
+  // camera/gallery picker can leave that later read empty, so the button
+  // click silently did nothing.
+  async function handleChange(event: ChangeEvent<HTMLInputElement>) {
+    const input = event.target;
+    const file = input.files?.[0];
     if (!file) return;
     setError(null);
 
     if (!ACCEPT[kind].includes(file.type)) {
       setError(REJECT_MESSAGE[kind]);
+      input.value = "";
       return;
     }
 
@@ -58,7 +59,7 @@ export default function UploadAttachmentForm({
         return;
       }
 
-      if (inputRef.current) inputRef.current.value = "";
+      input.value = "";
       router.refresh();
     } catch {
       setError("Upload fehlgeschlagen. Bitte erneut versuchen.");
@@ -70,18 +71,40 @@ export default function UploadAttachmentForm({
   return (
     <div className="flex flex-col gap-1">
       <div className="flex items-center gap-2">
-        <input
-          ref={inputRef}
-          type="file"
-          accept={ACCEPT[kind].join(",")}
-          capture={kind === "PHOTO" ? "environment" : undefined}
-          disabled={isUploading}
-          onChange={() => setError(null)}
-          className="file-input file-input-bordered file-input-sm"
-        />
-        <button type="button" className="btn btn-primary btn-sm" disabled={isUploading} onClick={handleUpload}>
-          {isUploading ? "Lädt hoch…" : CTA[kind]}
-        </button>
+        {kind === "PHOTO" ? (
+          <>
+            <label className={`btn btn-primary btn-sm ${isUploading ? "btn-disabled" : ""}`}>
+              Foto aufnehmen
+              <input
+                type="file"
+                accept={ACCEPT.PHOTO.join(",")}
+                capture="environment"
+                disabled={isUploading}
+                onChange={handleChange}
+                className="hidden"
+              />
+            </label>
+            <label className={`btn btn-outline btn-sm ${isUploading ? "btn-disabled" : ""}`}>
+              Aus Galerie wählen
+              <input
+                type="file"
+                accept={ACCEPT.PHOTO.join(",")}
+                disabled={isUploading}
+                onChange={handleChange}
+                className="hidden"
+              />
+            </label>
+          </>
+        ) : (
+          <input
+            type="file"
+            accept={ACCEPT.FILE.join(",")}
+            disabled={isUploading}
+            onChange={handleChange}
+            className="file-input file-input-bordered file-input-sm"
+          />
+        )}
+        {isUploading && <span className="loading loading-spinner loading-sm" />}
       </div>
       {error && <span className="text-xs text-error">{error}</span>}
     </div>
