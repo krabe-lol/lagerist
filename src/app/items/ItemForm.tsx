@@ -1,5 +1,6 @@
 import FormField from "@/components/FormField";
 import PlaceOptions, { type PlaceRoomOption, type PlaceContainerOption } from "@/components/PlaceOptions";
+import NewAttachmentFields from "@/components/NewAttachmentFields";
 import { createItemAction, updateItemAction } from "@/app/items/itemActions";
 
 interface ExistingItem {
@@ -96,6 +97,8 @@ export default function ItemForm({
           className="input input-bordered"
         />
       </FormField>
+
+      {mode === "new" && <NewAttachmentFields />}
 
       <button type="submit" className="btn btn-primary self-start">
         {mode === "new" ? "Artikel anlegen" : "Speichern"}

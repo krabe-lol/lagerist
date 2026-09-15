@@ -9,6 +9,7 @@ import {
   prepareSubtreeCleanup,
   reindexEntity,
 } from "@/lib/entities";
+import { saveAttachmentsFromFormData } from "@/lib/attachment-uploads";
 
 function extraSearchText(dimensions: string | null, volume: string | null): string {
   return [dimensions, volume].filter(Boolean).join(" ");
@@ -36,9 +37,17 @@ export async function createContainerAction(formData: FormData) {
     extraText: extraSearchText(container.dimensions, container.volume),
   });
 
+  const photoError = await saveAttachmentsFromFormData(formData, "photos", "PHOTO", "CONTAINER", container.id);
+  const fileError = await saveAttachmentsFromFormData(formData, "files", "FILE", "CONTAINER", container.id);
+
   revalidatePath("/");
   revalidatePath(`/rooms/${locationId}`);
-  redirect(`/containers/${container.id}`);
+
+  const query = new URLSearchParams();
+  if (photoError) query.set("photoUploadError", photoError);
+  if (fileError) query.set("fileUploadError", fileError);
+  const qs = query.toString();
+  redirect(`/containers/${container.id}${qs ? `?${qs}` : ""}`);
 }
 
 export async function updateContainerAction(formData: FormData) {

@@ -1,4 +1,5 @@
 import FormField from "@/components/FormField";
+import NewAttachmentFields from "@/components/NewAttachmentFields";
 import { createRoomAction, updateRoomAction } from "@/app/rooms/roomActions";
 
 interface RoomOption {
@@ -63,6 +64,8 @@ export default function RoomForm({
           ))}
         </select>
       </FormField>
+
+      {mode === "new" && <NewAttachmentFields />}
 
       <button type="submit" className="btn btn-primary self-start">
         {mode === "new" ? "Raum anlegen" : "Speichern"}

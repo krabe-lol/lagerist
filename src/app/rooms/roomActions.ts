@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { collectRoomSubtree, prepareSubtreeCleanup, reindexEntity } from "@/lib/entities";
+import { saveAttachmentsFromFormData } from "@/lib/attachment-uploads";
 
 export async function createRoomAction(formData: FormData) {
   const name = formData.get("name") as string;
@@ -21,10 +22,18 @@ export async function createRoomAction(formData: FormData) {
     description: room.description,
   });
 
+  const photoError = await saveAttachmentsFromFormData(formData, "photos", "PHOTO", "LOCATION", room.id);
+  const fileError = await saveAttachmentsFromFormData(formData, "files", "FILE", "LOCATION", room.id);
+
   revalidatePath("/");
   revalidatePath("/rooms");
   if (parentId) revalidatePath(`/rooms/${parentId}`);
-  redirect(`/rooms/${room.id}`);
+
+  const query = new URLSearchParams();
+  if (photoError) query.set("photoUploadError", photoError);
+  if (fileError) query.set("fileUploadError", fileError);
+  const qs = query.toString();
+  redirect(`/rooms/${room.id}${qs ? `?${qs}` : ""}`);
 }
 
 export async function updateRoomAction(formData: FormData) {

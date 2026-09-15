@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { collectItemSubtree, prepareSubtreeCleanup, reindexEntity, setItemTags } from "@/lib/entities";
+import { saveAttachmentsFromFormData } from "@/lib/attachment-uploads";
 
 function parseTags(formData: FormData): string[] {
   const raw = (formData.get("tags") as string | null) ?? "";
@@ -53,10 +54,18 @@ export async function createItemAction(formData: FormData) {
     description: item.description,
   });
 
+  const photoError = await saveAttachmentsFromFormData(formData, "photos", "PHOTO", "ITEM", item.id);
+  const fileError = await saveAttachmentsFromFormData(formData, "files", "FILE", "ITEM", item.id);
+
   revalidatePath("/");
   const path = placePath(place);
   if (path) revalidatePath(path);
-  redirect(`/items/${item.id}`);
+
+  const query = new URLSearchParams();
+  if (photoError) query.set("photoUploadError", photoError);
+  if (fileError) query.set("fileUploadError", fileError);
+  const qs = query.toString();
+  redirect(`/items/${item.id}${qs ? `?${qs}` : ""}`);
 }
 
 export async function updateItemAction(formData: FormData) {

@@ -2,6 +2,7 @@ import FormField from "@/components/FormField";
 import ContainerTemplateFields, {
   type ContainerTemplateOption,
 } from "@/components/ContainerTemplateFields";
+import NewAttachmentFields from "@/components/NewAttachmentFields";
 import { createContainerAction, updateContainerAction } from "@/app/containers/containerActions";
 
 interface RoomOption {
@@ -80,6 +81,8 @@ export default function ContainerForm({
           ))}
         </select>
       </FormField>
+
+      {mode === "new" && <NewAttachmentFields />}
 
       <button type="submit" className="btn btn-primary self-start">
         {mode === "new" ? "Container anlegen" : "Speichern"}
