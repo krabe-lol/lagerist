@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import RoomForm from "@/app/rooms/RoomForm";
+import NewRoomClient from "@/app/rooms/NewRoomClient";
 import PageHeader from "@/components/PageHeader";
 
 export default async function NewRoomPage({
@@ -16,7 +16,7 @@ export default async function NewRoomPage({
   return (
     <div>
       <PageHeader breadcrumbs={[{ label: "Räume", href: "/rooms" }, { label: "Neu" }]} title="Neuer Raum" />
-      <RoomForm mode="new" parentOptions={rooms} initialParentId={parentId} />
+      <NewRoomClient parentOptions={rooms} initialParentId={parentId} />
     </div>
   );
 }

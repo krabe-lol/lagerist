@@ -15,6 +15,11 @@ model Location {
   id          String   @id @default(cuid())
   name        String
   description String?
+  // Set to false only for a draft row silently created when a "New Room"
+  // page is opened (so attachment upload has a real id to target before the
+  // form is actually submitted) — see roomActions.ts. Excluded from every
+  // normal read via the confirmed-filtering Prisma client (see lib/db.ts).
+  confirmed   Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -56,11 +61,17 @@ model Container {
   description String?
   dimensions  String?
   volume      String?
+  // See Location.confirmed.
+  confirmed   Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  locationId String
-  location   Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  // Nullable so a draft Container (see `confirmed`) can exist before the
+  // user has picked a Raum for it — every *confirmed* Container is expected
+  // to always have one, enforced in application code (updateContainerAction),
+  // not the DB schema.
+  locationId String?
+  location   Location? @relation(fields: [locationId], references: [id], onDelete: Cascade)
 
   templateId String?
   template   ContainerTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
@@ -79,6 +90,8 @@ model Item {
   name        String
   description String?
   quantity    Int      @default(1)
+  // See Location.confirmed.
+  confirmed   Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import ItemForm from "@/app/items/ItemForm";
+import NewItemClient from "@/app/items/NewItemClient";
 import PageHeader from "@/components/PageHeader";
 
 export default async function NewItemPage({
@@ -20,11 +20,14 @@ export default async function NewItemPage({
   return (
     <div>
       <PageHeader breadcrumbs={[{ label: "Räume", href: "/rooms" }, { label: "Neuer Artikel" }]} title="Neuer Artikel" />
-      <ItemForm
-        mode="new"
+      <NewItemClient
         roomOptions={rooms}
-        containerOptions={containers.map((c) => ({ id: c.id, name: c.name, number: c.number, roomName: c.location.name }))}
-        initialTags={[]}
+        containerOptions={containers.map((c) => ({
+          id: c.id,
+          name: c.name,
+          number: c.number,
+          roomName: c.location?.name ?? "",
+        }))}
         initialRoomId={roomId}
         initialContainerId={containerId}
       />

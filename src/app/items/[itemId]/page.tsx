@@ -83,7 +83,7 @@ export default async function ItemDetailPage({
                       id: c.id,
                       name: c.name,
                       number: c.number,
-                      roomName: c.location.name,
+                      roomName: c.location?.name ?? "",
                     }))}
                     updateAction={updateItemLocationAction}
                   />

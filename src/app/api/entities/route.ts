@@ -25,7 +25,7 @@ export async function GET() {
       name: `#${c.number} ${c.name}`,
       typeLabel: "Container",
       segment: ENTITY_ROUTE_SEGMENT.CONTAINER,
-      subtitle: c.location.name,
+      subtitle: c.location?.name ?? "",
     })),
     ...items.map((i) => ({
       id: i.id,

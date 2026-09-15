@@ -4,7 +4,6 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { collectItemSubtree, prepareSubtreeCleanup, reindexEntity, setItemTags } from "@/lib/entities";
-import { saveAttachmentsFromFormData } from "@/lib/attachment-uploads";
 
 function parseTags(formData: FormData): string[] {
   const raw = (formData.get("tags") as string | null) ?? "";
@@ -36,38 +35,9 @@ function placePath({ locationId, containerId }: Place): string | null {
   return null;
 }
 
-export async function createItemAction(formData: FormData) {
-  const name = formData.get("name") as string;
-  const description = (formData.get("description") as string) || null;
-  const quantity = Number(formData.get("quantity") ?? 1) || 1;
-  const place = parsePlace(formData);
-
-  const item = await prisma.item.create({
-    data: { name, description, quantity, ...place },
-  });
-
-  await setItemTags(item.id, parseTags(formData));
-  await reindexEntity({
-    type: "ITEM",
-    id: item.id,
-    name: item.name,
-    description: item.description,
-  });
-
-  const photoError = await saveAttachmentsFromFormData(formData, "photos", "PHOTO", "ITEM", item.id);
-  const fileError = await saveAttachmentsFromFormData(formData, "files", "FILE", "ITEM", item.id);
-
-  revalidatePath("/");
-  const path = placePath(place);
-  if (path) revalidatePath(path);
-
-  const query = new URLSearchParams();
-  if (photoError) query.set("photoUploadError", photoError);
-  if (fileError) query.set("fileUploadError", fileError);
-  const qs = query.toString();
-  redirect(`/items/${item.id}${qs ? `?${qs}` : ""}`);
-}
-
+// Also used to finalize a draft item (see lib/drafts.ts) — "New Artikel"
+// edits the same freshly-created draft row this form always has an id for,
+// and this is what flips it from confirmed: false to true.
 export async function updateItemAction(formData: FormData) {
   const id = formData.get("id") as string;
   const name = formData.get("name") as string;
@@ -79,7 +49,7 @@ export async function updateItemAction(formData: FormData) {
     where: { id },
     // parentItemId stays explicitly cleared: an item edited through this form
     // always ends up placed directly in a room or container, never as a sub-item.
-    data: { name, description, quantity, ...place, parentItemId: null },
+    data: { name, description, quantity, ...place, parentItemId: null, confirmed: true },
   });
 
   await setItemTags(id, parseTags(formData));

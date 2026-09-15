@@ -36,7 +36,7 @@ export default async function EditItemPage({
         mode="edit"
         item={item}
         roomOptions={rooms}
-        containerOptions={containers.map((c) => ({ id: c.id, name: c.name, number: c.number, roomName: c.location.name }))}
+        containerOptions={containers.map((c) => ({ id: c.id, name: c.name, number: c.number, roomName: c.location?.name ?? "" }))}
         initialTags={tagNames}
       />
     </div>

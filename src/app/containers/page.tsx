@@ -33,7 +33,7 @@ export default async function ContainersPage() {
             </>
           ),
           subtitle: c.description,
-          meta: `${c.location.name} · ${c._count.items} Artikel`,
+          meta: `${c.location?.name ?? "Kein Raum"} · ${c._count.items} Artikel`,
         }))}
       />
     </div>

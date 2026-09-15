@@ -61,7 +61,7 @@ export async function searchAndHydrate(query: string, limit = 30): Promise<Searc
       name: `#${c.number} ${c.name}`,
       typeLabel: ENTITY_LABELS.CONTAINER,
       href: `/${ENTITY_ROUTE_SEGMENT.CONTAINER}/${c.id}`,
-      breadcrumb: c.location.name,
+      breadcrumb: c.location?.name ?? "",
     });
   }
   for (const i of items) {
