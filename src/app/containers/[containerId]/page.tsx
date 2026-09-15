@@ -95,7 +95,11 @@ export default async function ContainerDetailPage({
           </section>
         </div>
 
-        <ChildrenCard emptyText="Noch keine Artikel in diesem Container." nodes={children} />
+        <ChildrenCard
+          emptyText="Noch keine Artikel in diesem Container."
+          quickAdds={[{ label: "Artikel", href: `/items/new?containerId=${container.id}` }]}
+          nodes={children}
+        />
       </div>
     </div>
   );

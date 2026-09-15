@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
-import { getRoomAncestors, getItemTags } from "@/lib/entities";
+import { getItemLocationChain, getItemTags } from "@/lib/entities";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import DetailHeader from "@/components/DetailHeader";
 import DetailList from "@/components/DetailList";
@@ -8,7 +8,7 @@ import TagBadges from "@/components/TagBadges";
 import AttachmentSection from "@/components/AttachmentSection";
 import QrCodeBlock from "@/components/QrCodeBlock";
 import LocationChainTrail from "@/components/LocationChainTrail";
-import RoomQuickPicker from "@/components/RoomQuickPicker";
+import PlaceQuickPicker from "@/components/PlaceQuickPicker";
 import { LayoutGrid } from "lucide-react";
 import { deleteItemAction, updateItemLocationAction } from "@/app/items/itemActions";
 
@@ -25,18 +25,24 @@ export default async function ItemDetailPage({
   });
   if (!item) notFound();
 
-  const [ancestors, tagNames, rooms] = await Promise.all([
-    getRoomAncestors(item.locationId),
+  const [chain, tagNames, rooms, containers] = await Promise.all([
+    getItemLocationChain(item.id),
     getItemTags(item.id),
     prisma.location.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    prisma.container.findMany({
+      orderBy: { name: "asc" },
+      include: { location: { select: { name: true } } },
+    }),
   ]);
+
+  const current = chain.length > 0 ? chain[chain.length - 1] : null;
 
   return (
     <div className="flex flex-col gap-4">
       <Breadcrumbs
         items={[
           { label: "Räume", href: "/rooms" },
-          ...ancestors.map((a) => ({ label: a.name, href: `/rooms/${a.id}` })),
+          ...chain.map((l) => ({ label: l.name, href: l.href })),
           { label: item.name },
         ]}
       />
@@ -64,13 +70,18 @@ export default async function ItemDetailPage({
               label: "Lage",
               value: (
                 <div className="flex flex-col gap-1">
-                  <LocationChainTrail
-                    links={ancestors.slice(0, -1).map((r) => ({ name: r.name, href: `/rooms/${r.id}` }))}
-                  />
-                  <RoomQuickPicker
+                  <LocationChainTrail links={chain.slice(0, -1).map((l) => ({ name: l.name, href: l.href }))} />
+                  <PlaceQuickPicker
                     id={item.id}
-                    currentRoomId={item.locationId ?? undefined}
-                    roomOptions={rooms}
+                    currentValue={current ? `${current.kind}:${current.id}` : undefined}
+                    currentHref={current?.href}
+                    rooms={rooms}
+                    containers={containers.map((c) => ({
+                      id: c.id,
+                      name: c.name,
+                      number: c.number,
+                      roomName: c.location.name,
+                    }))}
                     updateAction={updateItemLocationAction}
                   />
                 </div>

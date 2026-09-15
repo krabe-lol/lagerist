@@ -1,10 +1,6 @@
 import FormField from "@/components/FormField";
+import PlaceOptions, { type PlaceRoomOption, type PlaceContainerOption } from "@/components/PlaceOptions";
 import { createItemAction, updateItemAction } from "@/app/items/itemActions";
-
-interface RoomOption {
-  id: string;
-  name: string;
-}
 
 interface ExistingItem {
   id: string;
@@ -12,22 +8,37 @@ interface ExistingItem {
   description: string | null;
   quantity: number;
   locationId: string | null;
+  containerId: string | null;
 }
 
 export default function ItemForm({
   mode,
   item,
   roomOptions,
+  containerOptions,
   initialTags,
   initialRoomId,
+  initialContainerId,
 }: {
   mode: "new" | "edit";
   item?: ExistingItem;
-  roomOptions: RoomOption[];
+  roomOptions: PlaceRoomOption[];
+  containerOptions: PlaceContainerOption[];
   initialTags: string[];
   initialRoomId?: string;
+  initialContainerId?: string;
 }) {
   const action = mode === "new" ? createItemAction : updateItemAction;
+
+  const initialPlace = item?.locationId
+    ? `room:${item.locationId}`
+    : item?.containerId
+      ? `container:${item.containerId}`
+      : initialRoomId
+        ? `room:${initialRoomId}`
+        : initialContainerId
+          ? `container:${initialContainerId}`
+          : "";
 
   return (
     <form action={action} className="flex max-w-2xl flex-col gap-4">
@@ -62,21 +73,17 @@ export default function ItemForm({
         />
       </FormField>
 
-      <FormField label="Raum">
+      <FormField label="Lage">
         <select
-          name="locationId"
+          name="place"
           required
-          defaultValue={item?.locationId ?? initialRoomId ?? ""}
+          defaultValue={initialPlace}
           className="select select-bordered"
         >
           <option value="" disabled>
             Bitte wählen …
           </option>
-          {roomOptions.map((opt) => (
-            <option key={opt.id} value={opt.id}>
-              {opt.name}
-            </option>
-          ))}
+          <PlaceOptions rooms={roomOptions} containers={containerOptions} />
         </select>
       </FormField>
 

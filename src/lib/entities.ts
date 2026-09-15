@@ -77,10 +77,54 @@ export async function getRoomAncestors(
   return ancestors;
 }
 
+/** An item's "Lage" (place) is either a Room or a Container (never another
+ * Item — no sub-items). This is the fully resolved chain from the topmost
+ * Room down to and including the item's own directly-assigned place. */
+export interface LocationLink {
+  kind: "room" | "container";
+  id: string;
+  name: string;
+  href: string;
+}
+
+export async function getItemLocationChain(itemId: string): Promise<LocationLink[]> {
+  const item = await prisma.item.findUnique({
+    where: { id: itemId },
+    select: { locationId: true, containerId: true },
+  });
+  if (!item) return [];
+
+  if (item.locationId) {
+    const roomAncestors = await getRoomAncestors(item.locationId);
+    return roomAncestors.map((r) => ({ kind: "room" as const, id: r.id, name: r.name, href: `/rooms/${r.id}` }));
+  }
+
+  if (item.containerId) {
+    const container = await prisma.container.findUnique({
+      where: { id: item.containerId },
+      select: { id: true, name: true, number: true, locationId: true },
+    });
+    if (!container) return [];
+    const roomAncestors = await getRoomAncestors(container.locationId);
+    return [
+      ...roomAncestors.map((r) => ({ kind: "room" as const, id: r.id, name: r.name, href: `/rooms/${r.id}` })),
+      {
+        kind: "container" as const,
+        id: container.id,
+        name: `${container.name} #${container.number}`,
+        href: `/containers/${container.id}`,
+      },
+    ];
+  }
+
+  return [];
+}
+
 // ---- Content trees (for nested "what's stored in what" listings) ---------
 //
-// Items are always leaves: an item can only ever be placed directly in a Room,
-// never inside a Container or another Item, so ItemNode has no children of its own.
+// Items are always leaves: an item can be placed directly in a Room or a
+// Container, but never inside another Item, so ItemNode has no children of
+// its own.
 
 export interface ItemNode {
   kind: "item";

@@ -13,8 +13,12 @@ export default async function EditItemPage({
   const item = await prisma.item.findUnique({ where: { id: itemId } });
   if (!item) notFound();
 
-  const [rooms, tagNames] = await Promise.all([
+  const [rooms, containers, tagNames] = await Promise.all([
     prisma.location.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    prisma.container.findMany({
+      orderBy: { name: "asc" },
+      include: { location: { select: { name: true } } },
+    }),
     getItemTags(itemId),
   ]);
 
@@ -28,7 +32,13 @@ export default async function EditItemPage({
         ]}
         title="Artikel bearbeiten"
       />
-      <ItemForm mode="edit" item={item} roomOptions={rooms} initialTags={tagNames} />
+      <ItemForm
+        mode="edit"
+        item={item}
+        roomOptions={rooms}
+        containerOptions={containers.map((c) => ({ id: c.id, name: c.name, number: c.number, roomName: c.location.name }))}
+        initialTags={tagNames}
+      />
     </div>
   );
 }
