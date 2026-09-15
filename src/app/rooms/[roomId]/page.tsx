@@ -13,10 +13,13 @@ import { deleteRoomAction } from "@/app/rooms/roomActions";
 
 export default async function RoomDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ roomId: string }>;
+  searchParams: Promise<{ photoUploadError?: string; fileUploadError?: string }>;
 }) {
   const { roomId } = await params;
+  const { photoUploadError, fileUploadError } = await searchParams;
 
   const room = await prisma.location.findUnique({
     where: { id: roomId },
@@ -74,6 +77,8 @@ export default async function RoomDetailPage({
                       entityType="LOCATION"
                       entityId={room.id}
                       attachments={room.attachments}
+                      photoUploadError={photoUploadError}
+                      fileUploadError={fileUploadError}
                     />
                   ),
                 },

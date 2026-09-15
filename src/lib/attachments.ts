@@ -2,6 +2,9 @@ import { createWriteStream } from "node:fs";
 import { mkdir, unlink } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
+import { Transform } from "node:stream";
+import { pipeline } from "node:stream/promises";
+import type { Readable } from "node:stream";
 
 const DATA_DIR = process.env.LAGERIST_DATA_DIR ?? path.join(process.cwd(), "data");
 const UPLOADS_DIR = path.join(DATA_DIR, "uploads");
@@ -20,12 +23,13 @@ export class FileTooLargeError extends Error {
   }
 }
 
-// Streams the request body straight to disk, counting bytes as they arrive
-// instead of buffering the whole upload in memory first (the previous
-// file.arrayBuffer() approach held the entire file in RAM twice: once as
-// parsed FormData, once as our own copy).
+// Streams the upload straight to disk, counting bytes as they arrive instead
+// of buffering the whole file in memory first. `pipeline` destroys every
+// stream in the chain (including the destination file) once any of them
+// errors, and waits for that teardown to finish before rejecting — so a
+// too-large upload can't leave a half-written orphan file behind.
 export async function saveUploadedFile(
-  body: ReadableStream<Uint8Array>,
+  source: Readable,
   filename: string,
   mimeType: string,
   maxBytes: number
@@ -36,37 +40,21 @@ export async function saveUploadedFile(
   const storedPath = `${randomUUID()}${ext}`;
   const destination = path.join(UPLOADS_DIR, storedPath);
 
-  const writeStream = createWriteStream(destination);
-  const reader = body.getReader();
   let size = 0;
+  const limiter = new Transform({
+    transform(chunk: Buffer, _encoding, callback) {
+      size += chunk.length;
+      if (size > maxBytes) {
+        callback(new FileTooLargeError(maxBytes));
+        return;
+      }
+      callback(null, chunk);
+    },
+  });
 
   try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      size += value.byteLength;
-      if (size > maxBytes) {
-        throw new FileTooLargeError(maxBytes);
-      }
-
-      if (!writeStream.write(value)) {
-        await new Promise<void>((resolve) => writeStream.once("drain", resolve));
-      }
-    }
-    await new Promise<void>((resolve, reject) => {
-      writeStream.end((err?: Error | null) => (err ? reject(err) : resolve()));
-    });
+    await pipeline(source, limiter, createWriteStream(destination));
   } catch (err) {
-    // Wait for the stream to fully settle before unlinking — destroying it
-    // doesn't synchronously close the underlying fd, so an unlink issued
-    // right after destroy() can race the (still pending) file creation and
-    // silently no-op, leaving an empty orphan file once that creation
-    // finally completes.
-    await new Promise<void>((resolve) => {
-      writeStream.destroy();
-      writeStream.once("close", () => resolve());
-    });
     await unlink(destination).catch(() => {});
     throw err;
   }

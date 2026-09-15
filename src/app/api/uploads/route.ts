@@ -1,7 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { revalidatePath } from "next/cache";
+import { Readable } from "node:stream";
+import Busboy from "busboy";
 import { prisma } from "@/lib/db";
-import { FileTooLargeError, saveUploadedFile } from "@/lib/attachments";
+import { FileTooLargeError, saveUploadedFile, type StoredFile } from "@/lib/attachments";
 import {
   ALLOWED_UPLOAD_MIME_TYPES,
   ATTACHMENT_KINDS,
@@ -14,63 +16,100 @@ import {
   type EntityType,
 } from "@/lib/constants";
 
-// Handles uploads directly as a streamed request body (not multipart/
-// FormData) so the file is written to disk as it arrives, rather than being
-// buffered whole in memory first — see saveUploadedFile. This is why uploads
-// go through a Route Handler and a client-side fetch() instead of the
-// uploadAttachmentAction Server Action they used before: Server Actions must
-// fully parse the FormData body before the action runs, so the framework has
-// no streaming path.
+type ParseResult = { ok: true; stored: StoredFile } | { ok: false; status: number; error: string };
+
+// Uploads arrive as a real native <form method="post" encType="multipart/
+// form-data"> submission (a full page POST, not a fetch() from JS) — that's
+// the most battle-tested way browsers hand off a picked/captured file, and
+// unlike a JS-held File reference it doesn't depend on the page's JS state
+// surviving the round trip through the native camera/gallery picker app.
+// Busboy parses that multipart body as a stream so the file still goes
+// straight to disk (via saveUploadedFile) without ever buffering the whole
+// request in memory.
 export async function POST(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const entityType = searchParams.get("entityType") as EntityType | null;
   const entityId = searchParams.get("entityId");
   const kind = searchParams.get("kind") as AttachmentKind | null;
-  const filename = searchParams.get("filename");
 
-  if (
-    !entityType ||
-    !ENTITY_TYPES.includes(entityType) ||
-    !entityId ||
-    !kind ||
-    !ATTACHMENT_KINDS.includes(kind) ||
-    !filename
-  ) {
+  if (!entityType || !ENTITY_TYPES.includes(entityType) || !entityId || !kind || !ATTACHMENT_KINDS.includes(kind)) {
     return NextResponse.json({ error: "Fehlende oder ungültige Angaben für den Upload." }, { status: 400 });
   }
 
-  const mimeType = request.headers.get("content-type") ?? "";
-  if (!ALLOWED_UPLOAD_MIME_TYPES[kind].includes(mimeType)) {
-    return NextResponse.json({ error: UPLOAD_REJECT_MESSAGE[kind] }, { status: 415 });
-  }
-
-  if (!request.body) {
+  const contentType = request.headers.get("content-type") ?? "";
+  if (!contentType.startsWith("multipart/form-data") || !request.body) {
     return NextResponse.json({ error: "Keine Datei erhalten." }, { status: 400 });
   }
 
   const maxMb = MAX_UPLOAD_SIZE_BYTES / (1024 * 1024);
-  let stored;
-  try {
-    stored = await saveUploadedFile(request.body, filename, mimeType, MAX_UPLOAD_SIZE_BYTES);
-  } catch (err) {
-    if (err instanceof FileTooLargeError) {
-      return NextResponse.json({ error: `Datei ist zu groß (max. ${maxMb} MB).` }, { status: 413 });
-    }
-    throw err;
+  const nodeBody = Readable.fromWeb(request.body as import("node:stream/web").ReadableStream<Uint8Array>);
+
+  const result = await new Promise<ParseResult>((resolve) => {
+    const busboy = Busboy({ headers: { "content-type": contentType } });
+    let settled = false;
+
+    busboy.on("file", (_fieldname, fileStream, info) => {
+      if (settled || !info.filename) {
+        fileStream.resume();
+        return;
+      }
+
+      if (!ALLOWED_UPLOAD_MIME_TYPES[kind].includes(info.mimeType)) {
+        settled = true;
+        fileStream.resume();
+        resolve({ ok: false, status: 415, error: UPLOAD_REJECT_MESSAGE[kind] });
+        return;
+      }
+
+      settled = true;
+      saveUploadedFile(fileStream, info.filename, info.mimeType, MAX_UPLOAD_SIZE_BYTES)
+        .then((stored) => resolve({ ok: true, stored }))
+        .catch((err) => {
+          if (err instanceof FileTooLargeError) {
+            resolve({ ok: false, status: 413, error: `Datei ist zu groß (max. ${maxMb} MB).` });
+          } else {
+            resolve({ ok: false, status: 500, error: "Upload fehlgeschlagen. Bitte erneut versuchen." });
+          }
+        });
+    });
+
+    busboy.on("error", () => {
+      if (!settled) {
+        settled = true;
+        resolve({ ok: false, status: 400, error: "Upload fehlgeschlagen. Bitte erneut versuchen." });
+      }
+    });
+
+    busboy.on("finish", () => {
+      if (!settled) {
+        settled = true;
+        resolve({ ok: false, status: 400, error: "Keine Datei erhalten." });
+      }
+    });
+
+    nodeBody.pipe(busboy);
+  });
+
+  const errorParam = kind === "PHOTO" ? "photoUploadError" : "fileUploadError";
+
+  if (!result.ok) {
+    const redirectUrl = new URL(entityPath(entityType, entityId), request.url);
+    redirectUrl.searchParams.set(errorParam, result.error);
+    return NextResponse.redirect(redirectUrl, { status: 303 });
   }
 
   const attachment = await prisma.attachment.create({
     data: {
       kind,
-      filename: stored.filename,
-      storedPath: stored.storedPath,
-      mimeType: stored.mimeType,
-      size: stored.size,
+      filename: result.stored.filename,
+      storedPath: result.stored.storedPath,
+      mimeType: result.stored.mimeType,
+      size: result.stored.size,
       [ENTITY_COLUMN[entityType]]: entityId,
     },
   });
 
   revalidatePath(entityPath(entityType, entityId));
 
-  return NextResponse.json({ id: attachment.id });
+  return NextResponse.redirect(new URL(entityPath(entityType, entityId), request.url), { status: 303 });
 }

@@ -14,10 +14,13 @@ import { deleteContainerAction, updateContainerLocationAction } from "@/app/cont
 
 export default async function ContainerDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ containerId: string }>;
+  searchParams: Promise<{ photoUploadError?: string; fileUploadError?: string }>;
 }) {
   const { containerId } = await params;
+  const { photoUploadError, fileUploadError } = await searchParams;
 
   const container = await prisma.container.findUnique({
     where: { id: containerId },
@@ -86,6 +89,8 @@ export default async function ContainerDetailPage({
                       entityType="CONTAINER"
                       entityId={container.id}
                       attachments={container.attachments}
+                      photoUploadError={photoUploadError}
+                      fileUploadError={fileUploadError}
                     />
                   ),
                 },
