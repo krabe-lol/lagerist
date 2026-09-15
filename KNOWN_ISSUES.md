@@ -7,21 +7,23 @@ Android-Geräten mit wenig freiem Arbeitsspeicher.
 **Bezug:** [Issue #5](https://github.com/krabe-lol/lagerist/issues/5)
 **Status:** Offen. Ein In-Page-Kamera-Fix (`getUserMedia()` statt externer
 App) wurde probeweise gebaut und hätte das Problem für den Kamera-Weg
-strukturell gelöst, wurde aber wieder verworfen zugunsten eines einzigen
-Upload-Buttons ohne `capture`-Attribut, der eigentlich den nativen
-OS-Auswahldialog (Kamera/Dateien/Galerie) zeigen sollte. Auf einem echten
-Android-Gerät zeigte sich aber: ohne `capture` öffnet der Browser dort nicht
-zuverlässig diesen Chooser, sondern direkt die Galerie/Dateiauswahl — die
-Kamera-Option war so praktisch nicht mehr erreichbar. Daher zurück auf zwei
-getrennte Buttons ("Kamera" mit `capture="environment"`, "Dateien" ohne),
-die die Wahl explizit vorab abfragen statt sich auf den (browser-/
-geräteabhängigen) nativen Chooser zu verlassen. Das Grundproblem (externe
-App reißt den Tab in den Hintergrund) bleibt für beide Wege bestehen, siehe
-unten.
+strukturell gelöst, wurde aber wieder verworfen. Ein dedizierter
+Kamera-Button (`capture="environment"`) wurde ebenfalls probeweise
+eingebaut und wieder entfernt — beim Testen mit zwei Buttons
+nebeneinander (Kamera + Galerie) zeigte "Foto hinzufügen" trotz exakt
+identischem `accept`-Wert wie beim (zuverlässig funktionierenden)
+Datei-Button mal den nativen Auswahldialog, mal ging es direkt zur
+Galerie — nicht reproduzierbar über den `accept`/`capture`-Wert allein
+erklärbar, siehe "Was schon ausprobiert" unten. UI jetzt bewusst minimal:
+ein Button pro Anhangstyp ("Foto hinzufügen", "Datei(en) hinzufügen"),
+beide ohne `capture`, die den nativen Android-Auswahldialog zeigen
+(Kamera/Dateien/Mehr als Icons). Das Grundproblem (externe App reißt den
+Tab in den Hintergrund) bleibt für Kamera *und* Galerie/Dateien bestehen,
+siehe unten.
 
 ### Symptom
 
-Auf dem Handy auf "Foto aufnehmen" oder "Aus Galerie wählen" tippen, im
+Auf dem Handy auf "Foto hinzufügen" oder "Datei(en) hinzufügen" tippen, im
 Kamera-/Galerie-Dialog ein Bild auswählen bzw. aufnehmen, zurück zur
 Lagerist-Seite — und nichts passiert. Kein Fehler, kein Ladeindikator, kein
 Foto erscheint. Am Server kommt nie eine Upload-Anfrage an.
@@ -72,6 +74,23 @@ per Fix ausgeschlossen (alle im Branch `5-foto-upload-ohne-kamerazugriff`):
    umgestellt auf ein natives `<form encType="multipart/form-data">`, das
    der Browser selbst serialisiert (robuster als ein JS-Verweis über die
    App-Wechsel-Grenze hinweg).
+5. Mehrere separate Buttons ausprobiert (je einer mit anderem
+   `accept`/`capture`, um Kamera/Galerie/Dateien gezielt anzusteuern) →
+   wieder verworfen zugunsten eines einzigen Buttons pro Anhangstyp. Dabei
+   gelernt: ein *reines* `accept` (nur Bild-MIME-Typen, keine gemischte
+   Liste) ohne `capture` ist es, was den nativen Android-Auswahldialog
+   (Kamera/Dateien/Mehr) auslöst; mischt man MIME-Typen aus verschiedenen
+   Kategorien (z. B. Bilder + PDF), kann Android/Chrome diesen Dialog
+   überspringen und direkt eine bestimmte App öffnen. Welche einzelnen
+   App-Icons im Dialog erscheinen, ist aber Android-/Geräte-Sache, nicht
+   von uns steuerbar.
+6. Bei zwei nebeneinander stehenden Foto-Buttons (Kamera mit `capture` +
+   ein zweiter mit gemischtem `accept`) auch die Reihenfolge im DOM
+   getauscht, in der Vermutung, dass Android sich beim Auflösen des
+   zweiten Buttons an der kürzlich benutzten Kamera-App "erinnert" →
+   ohne bestätigten Erfolg, dann beide Buttons zu einem einzigen
+   reduziert (kein `capture` mehr). Die genaue Ursache für das
+   inkonsistente Verhalten bei identischem `accept` blieb ungeklärt.
 
 Jede dieser Änderungen war für sich genommen eine echte Verbesserung (Punkt 1
 löste das ursprüngliche Issue "keine Kamera-Option", Punkt 3 behob einen
