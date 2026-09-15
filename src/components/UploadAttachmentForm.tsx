@@ -81,7 +81,7 @@ export default function UploadAttachmentForm({
                 capture="environment"
                 disabled={isUploading}
                 onChange={handleChange}
-                className="hidden"
+                className="sr-only"
               />
             </label>
             <label className={`btn btn-outline btn-sm ${isUploading ? "btn-disabled" : ""}`}>
@@ -91,7 +91,7 @@ export default function UploadAttachmentForm({
                 accept={ACCEPT.PHOTO.join(",")}
                 disabled={isUploading}
                 onChange={handleChange}
-                className="hidden"
+                className="sr-only"
               />
             </label>
           </>
@@ -106,7 +106,11 @@ export default function UploadAttachmentForm({
         )}
         {isUploading && <span className="loading loading-spinner loading-sm" />}
       </div>
-      {error && <span className="text-xs text-error">{error}</span>}
+      {error && (
+        <div role="alert" className="alert alert-error py-2 text-sm">
+          <span>{error}</span>
+        </div>
+      )}
     </div>
   );
 }
