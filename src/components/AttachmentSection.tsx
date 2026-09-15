@@ -21,11 +21,15 @@ export default function AttachmentSection({
   entityId,
   primaryPhotoId,
   attachments,
+  photoUploadError,
+  fileUploadError,
 }: {
   entityType: EntityType;
   entityId: string;
   primaryPhotoId: string | null;
   attachments: AttachmentInfo[];
+  photoUploadError?: string;
+  fileUploadError?: string;
 }) {
   const photos = attachments.filter((a) => a.kind === "PHOTO");
   const files = attachments.filter((a) => a.kind === "FILE");
@@ -70,6 +74,11 @@ export default function AttachmentSection({
           {photos.length === 0 && <p className="text-sm text-base-content/60">Noch keine Fotos.</p>}
         </div>
         <UploadAttachmentForm entityType={entityType} entityId={entityId} kind="PHOTO" />
+        {photoUploadError && (
+          <div role="alert" className="alert alert-error mt-2 py-2 text-sm">
+            <span>{photoUploadError}</span>
+          </div>
+        )}
       </div>
 
       <div>
@@ -99,6 +108,11 @@ export default function AttachmentSection({
           {files.length === 0 && <p className="text-sm text-base-content/60">Noch keine Dateien.</p>}
         </ul>
         <UploadAttachmentForm entityType={entityType} entityId={entityId} kind="FILE" />
+        {fileUploadError && (
+          <div role="alert" className="alert alert-error mt-2 py-2 text-sm">
+            <span>{fileUploadError}</span>
+          </div>
+        )}
       </div>
     </div>
   );

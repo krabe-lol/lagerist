@@ -14,10 +14,13 @@ import { deleteItemAction, updateItemLocationAction } from "@/app/items/itemActi
 
 export default async function ItemDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ itemId: string }>;
+  searchParams: Promise<{ photoUploadError?: string; fileUploadError?: string }>;
 }) {
   const { itemId } = await params;
+  const { photoUploadError, fileUploadError } = await searchParams;
 
   const item = await prisma.item.findUnique({
     where: { id: itemId },
@@ -96,6 +99,8 @@ export default async function ItemDetailPage({
                   entityId={item.id}
                   primaryPhotoId={item.primaryPhotoId}
                   attachments={item.attachments}
+                  photoUploadError={photoUploadError}
+                  fileUploadError={fileUploadError}
                 />
               ),
             },
