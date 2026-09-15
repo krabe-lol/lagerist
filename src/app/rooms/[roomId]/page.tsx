@@ -51,8 +51,8 @@ export default async function RoomDetailPage({
         deleteId={room.id}
       />
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5 lg:gap-24">
-        <div className="flex flex-col gap-6 lg:col-span-2">
+      <div className="detail-grid gap-6 lg:gap-24">
+        <div className="detail-grid-details flex flex-col gap-6">
           <section>
             <h2 className="mb-2 font-semibold">Details</h2>
             <DetailList
@@ -69,7 +69,6 @@ export default async function RoomDetailPage({
                       },
                     ]
                   : []),
-                { label: "QR-Code", value: <QrCodeBlock type="LOCATION" id={room.id} /> },
                 {
                   label: "Anhänge",
                   value: (
@@ -88,6 +87,7 @@ export default async function RoomDetailPage({
         </div>
 
         <ChildrenCard
+          className="detail-grid-children"
           emptyText="Noch nichts in diesem Raum."
           quickAdds={[
             { label: "Unter-Raum", href: `/rooms/new?parentId=${room.id}` },
@@ -96,6 +96,11 @@ export default async function RoomDetailPage({
           ]}
           nodes={children}
         />
+
+        <section className="detail-grid-qr">
+          <h2 className="mb-2 font-semibold">QR-Code</h2>
+          <QrCodeBlock type="LOCATION" id={room.id} />
+        </section>
       </div>
     </div>
   );

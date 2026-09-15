@@ -90,7 +90,6 @@ export default async function ItemDetailPage({
                 </div>
               ),
             },
-            { label: "QR-Code", value: <QrCodeBlock type="ITEM" id={item.id} /> },
             {
               label: "Anhänge",
               value: (
@@ -103,6 +102,7 @@ export default async function ItemDetailPage({
                 />
               ),
             },
+            { label: "QR-Code", value: <QrCodeBlock type="ITEM" id={item.id} /> },
           ]}
         />
       </section>

@@ -6,13 +6,15 @@ export default function ChildrenCard({
   nodes,
   emptyText,
   quickAdds,
+  className = "",
 }: {
   nodes: EntityNode[];
   emptyText: string;
   quickAdds?: { label: string; href: string }[];
+  className?: string;
 }) {
   return (
-    <div className="rounded-box border border-base-300 bg-base-100 p-4 lg:col-span-3">
+    <div className={`rounded-box border border-base-300 bg-base-100 p-4 ${className}`}>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h2 className="font-semibold">Inhalt</h2>
         {quickAdds && quickAdds.length > 0 && (
