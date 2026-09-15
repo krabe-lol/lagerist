@@ -5,7 +5,10 @@
 **Betrifft:** Foto-Upload (Kamera *und* Galerie) sowie Datei-Anhänge, auf
 Android-Geräten mit wenig freiem Arbeitsspeicher.
 **Bezug:** [Issue #5](https://github.com/krabe-lol/lagerist/issues/5)
-**Status:** Ursache identifiziert, noch nicht behoben.
+**Status:** Kamera-Weg behoben (In-Page-Kamera statt externer App, siehe
+unten), lokal gegen eine simulierte Kamera verifiziert — Bestätigung auf
+einem echten Gerät steht noch aus. "Aus Galerie wählen" nutzt weiterhin die
+externe Foto-App und kann daher theoretisch noch betroffen sein.
 
 ### Symptom
 
@@ -67,26 +70,36 @@ zusätzlichen, unabhängigen Bug), keine davon behebt aber das hier
 beschriebene Grundproblem — das liegt oberhalb unseres Codes, im
 Android-Prozess-Lifecycle.
 
-### Mögliche echte Lösung (noch nicht umgesetzt)
+### Umgesetzte Lösung: In-Page-Kamera (`CameraCapture.tsx`)
 
-Eine In-Page-Kamera bauen: Foto direkt auf der Lagerist-Seite per
-`getUserMedia()` + `<video>`-Vorschau + Canvas-Snapshot aufnehmen, ganz ohne
-externe App. Der Browser-Tab bleibt dabei durchgehend im Vordergrund, das
-Problem tritt strukturell nicht mehr auf. Das ist ein eigenständiges,
-größeres Feature (Kamera-Berechtigung, Vorschau-UI, Aufnehmen/Wiederholen,
-Canvas→Blob-Konvertierung) und wurde bewusst noch nicht begonnen.
+Foto wird jetzt direkt auf der Lagerist-Seite per `getUserMedia()` +
+`<video>`-Vorschau + Canvas-Snapshot aufgenommen, ganz ohne externe App.
+Der Browser-Tab bleibt dabei durchgehend im Vordergrund, das Problem tritt
+strukturell nicht mehr auf.
+
+Recherche dazu, inkl. eines Projekts, das dasselbe Problem hatte und exakt
+so gelöst hat:
+
+- [geir-eilertsen/rack #32](https://github.com/geir-eilertsen/rack/issues/32) — unabhängiges Projekt mit demselben Android-Problem, gelöst durch Ersetzen der externen Kamera-App durch `getUserMedia()` + `ImageCapture`
+- [MDN: Taking still photos with getUserMedia()](https://developer.mozilla.org/en-US/docs/Web/API/Media_Capture_and_Streams_API/Taking_still_photos)
+- [web.dev: Capturing an image from the user](https://web.dev/articles/media-capturing-images)
+
+**Wichtige Einschränkung:** `getUserMedia()` funktioniert nur in einem
+*secure context* — HTTPS oder `localhost`. Das aktuelle Deployment
+(`stack.yml`) läuft über einfaches HTTP ohne TLS-Terminierung; ohne HTTPS
+davor zeigt `CameraCapture` einen Hinweis und verweist auf "Aus Galerie
+wählen". Für den produktiven Einsatz braucht es also einen Reverse Proxy
+mit TLS-Zertifikat vor der App (z. B. Let's Encrypt).
+
+"Aus Galerie wählen" nutzt weiterhin die native Dateiauswahl (externe App)
+und ist von der oben beschriebenen Ursache theoretisch weiter betroffen —
+dafür wurde keine In-Page-Alternative gebaut, da eine Foto-Auswahl aus der
+Galerie kein Kamera-Live-Bild braucht und der Nutzer die Datei stattdessen
+z. B. per Dateimanager/Freigabe an anderer Stelle in Lagerist ablegen
+könnte, falls es weiter Probleme macht.
 
 ### Workaround für Nutzer
 
-Kein zuverlässiger Workaround bekannt. Andere im Hintergrund laufende Apps
-schließen, um Speicher freizugeben, kann die Erfolgschance erhöhen; ein
-erneuter Versuch klappt manchmal, wenn das Gerät gerade nicht unter
-Speicherdruck steht.
-
-### Debug-Hilfsmittel im Branch
-
-`UploadAttachmentForm.tsx` zeigt aktuell testweise eine sichtbare
-"Debug:"-Zeile unter den Upload-Buttons (Klick erkannt? Datei erkannt?
-Formular abgeschickt?), die zur Diagnose dieses Problems eingebaut wurde.
-Vor dem Mergen entweder entfernen oder — falls die In-Page-Kamera-Lösung
-angegangen wird — im Rahmen dieses Umbaus mit aufräumen.
+Für Kamera-Fotos: nicht mehr nötig, siehe oben. Für Galerie-Auswahl bei
+anhaltenden Problemen: kein zuverlässiger Workaround bekannt; andere
+Hintergrund-Apps schließen, um Speicher freizugeben, kann helfen.
