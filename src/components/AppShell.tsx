@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Forklift, Home, MapPin, Box, LayoutGrid, ClipboardList, ScanLine, Tag, Menu } from "lucide-react";
 import CreateMenu from "@/components/CreateMenu";
 import QuickSearch from "@/components/QuickSearch";
+import packageJson from "../../package.json";
 
 const NAV_LINKS = [
   { href: "/", label: "Home", icon: Home },
@@ -91,6 +92,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
               </Link>
             ))}
           </nav>
+          <span className="mt-auto px-3 py-2 text-right text-xs text-base-content/40">v{packageJson.version}</span>
         </aside>
       </div>
     </div>
