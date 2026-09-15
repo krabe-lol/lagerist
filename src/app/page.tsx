@@ -26,8 +26,8 @@ export default async function DashboardPage() {
 
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard label="Räume" value={roomCount} href="/rooms" />
-        <StatCard label="Container" value={containerCount} />
-        <StatCard label="Artikel" value={itemCount} />
+        <StatCard label="Container" value={containerCount} href="/containers" />
+        <StatCard label="Artikel" value={itemCount} href="/items" />
       </div>
 
       {rooms.length === 0 ? (
