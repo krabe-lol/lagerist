@@ -1,7 +1,7 @@
 import type { EntityType } from "@/lib/constants";
-import { deleteAttachmentAction, uploadAttachmentAction } from "@/lib/attachment-actions";
+import { deleteAttachmentAction } from "@/lib/attachment-actions";
 import PhotoGallery from "@/components/PhotoGallery";
-import AutoUploadInput from "@/components/AutoUploadInput";
+import UploadAttachmentForm from "@/components/UploadAttachmentForm";
 import ConfirmDeleteForm from "@/components/ConfirmDeleteForm";
 
 interface AttachmentInfo {
@@ -35,11 +35,7 @@ export default function AttachmentSection({
       <div>
         <h4 className="mb-2 font-semibold">Fotos</h4>
         <PhotoGallery photos={photos} entityType={entityType} entityId={entityId} />
-        <AutoUploadInput
-          action={uploadAttachmentAction}
-          hiddenFields={{ entityType, entityId, kind: "PHOTO" }}
-          accept="image/*"
-        />
+        <UploadAttachmentForm entityType={entityType} entityId={entityId} kind="PHOTO" />
       </div>
 
       <div>
@@ -69,7 +65,7 @@ export default function AttachmentSection({
           ))}
           {files.length === 0 && <p className="text-sm text-base-content/60">Noch keine Dateien.</p>}
         </ul>
-        <AutoUploadInput action={uploadAttachmentAction} hiddenFields={{ entityType, entityId, kind: "FILE" }} />
+        <UploadAttachmentForm entityType={entityType} entityId={entityId} kind="FILE" />
       </div>
     </div>
   );
