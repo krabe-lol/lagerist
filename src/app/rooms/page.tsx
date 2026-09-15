@@ -23,6 +23,7 @@ export default async function RoomsPage() {
       />
 
       <EntityCollection
+        layout="list"
         emptyText="Noch keine Räume angelegt."
         items={rooms.map((room) => ({
           key: room.id,

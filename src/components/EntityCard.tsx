@@ -19,7 +19,11 @@ export default function EntityCard({
   return (
     <Link
       href={href}
-      className={`rounded-box border border-base-300 bg-base-100 transition hover:border-primary ${dense ? "p-3" : "p-4"}`}
+      className={
+        dense
+          ? "block bg-base-100 p-3 transition hover:bg-base-200"
+          : "rounded-box border border-base-300 bg-base-100 p-4 transition hover:border-primary"
+      }
     >
       <div className="flex items-center justify-between gap-2">
         <p className={dense ? "font-medium" : "font-semibold"}>{title}</p>

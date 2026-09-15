@@ -27,6 +27,7 @@ export default async function ItemsPage() {
       />
 
       <EntityCollection
+        layout="list"
         emptyText="Noch keine Artikel angelegt."
         items={items.map((item) => ({
           key: item.id,
