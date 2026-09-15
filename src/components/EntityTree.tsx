@@ -12,7 +12,7 @@ function NodeTitle({ node }: { node: EntityNode }) {
   if (node.kind === "container") {
     return (
       <>
-        {node.name} <span className="text-base-content/60">#{node.number}</span>
+        <span className="text-base-content/60">#{node.number}</span> {node.name}
       </>
     );
   }

@@ -22,7 +22,7 @@ export async function GET() {
     })),
     ...containers.map((c) => ({
       id: c.id,
-      name: `${c.name} #${c.number}`,
+      name: `#${c.number} ${c.name}`,
       typeLabel: "Container",
       segment: ENTITY_ROUTE_SEGMENT.CONTAINER,
       subtitle: c.location.name,

@@ -33,7 +33,7 @@ export default function PlaceOptions({
       <optgroup label="Container">
         {containers.map((c) => (
           <option key={`container:${c.id}`} value={`container:${c.id}`}>
-            {c.name} #{c.number} ({c.roomName})
+            #{c.number} {c.name} ({c.roomName})
           </option>
         ))}
       </optgroup>

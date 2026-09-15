@@ -43,22 +43,25 @@ export default async function ContainerDetailPage({
         items={[
           { label: "Räume", href: "/rooms" },
           ...ancestors.map((a) => ({ label: a.name, href: `/rooms/${a.id}` })),
-          { label: `${container.name} #${container.number}` },
+          { label: `#${container.number} ${container.name}` },
         ]}
       />
 
       <DetailHeader
         icon={Box}
-        title={container.name}
-        badge={<span className="text-base-content/60">#{container.number}</span>}
+        title={
+          <>
+            <span className="text-base-content/60">#{container.number}</span> {container.name}
+          </>
+        }
         description={container.description}
         editHref={`/containers/${container.id}/edit`}
         deleteAction={deleteContainerAction}
         deleteId={container.id}
       />
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5 lg:gap-20">
-        <div className="flex flex-col gap-6 lg:col-span-2">
+      <div className="detail-grid gap-6 lg:gap-20">
+        <div className="detail-grid-details flex flex-col gap-6">
           <section>
             <h2 className="mb-2 font-semibold">Details</h2>
             <DetailList
@@ -81,7 +84,6 @@ export default async function ContainerDetailPage({
                 },
                 ...(container.dimensions ? [{ label: "Maße", value: container.dimensions }] : []),
                 ...(container.volume ? [{ label: "Volumen", value: container.volume }] : []),
-                { label: "QR-Code", value: <QrCodeBlock type="CONTAINER" id={container.id} /> },
                 {
                   label: "Anhänge",
                   value: (
@@ -100,10 +102,16 @@ export default async function ContainerDetailPage({
         </div>
 
         <ChildrenCard
+          className="detail-grid-children"
           emptyText="Noch keine Artikel in diesem Container."
           quickAdds={[{ label: "Artikel", href: `/items/new?containerId=${container.id}` }]}
           nodes={children}
         />
+
+        <section className="detail-grid-qr">
+          <h2 className="mb-2 font-semibold">QR-Code</h2>
+          <QrCodeBlock type="CONTAINER" id={container.id} />
+        </section>
       </div>
     </div>
   );

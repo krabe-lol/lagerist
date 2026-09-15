@@ -22,13 +22,14 @@ export default async function ContainersPage() {
       />
 
       <EntityCollection
+        layout="list"
         emptyText="Noch keine Container angelegt."
         items={containers.map((c) => ({
           key: c.id,
           href: `/containers/${c.id}`,
           title: (
             <>
-              {c.name} <span className="text-base-content/60">#{c.number}</span>
+              <span className="text-base-content/60">#{c.number}</span> {c.name}
             </>
           ),
           subtitle: c.description,

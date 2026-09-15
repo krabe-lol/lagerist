@@ -58,7 +58,7 @@ export async function searchAndHydrate(query: string, limit = 30): Promise<Searc
     byKey.set(`CONTAINER-${c.id}`, {
       entityType: "CONTAINER",
       id: c.id,
-      name: `${c.name} #${c.number}`,
+      name: `#${c.number} ${c.name}`,
       typeLabel: ENTITY_LABELS.CONTAINER,
       href: `/${ENTITY_ROUTE_SEGMENT.CONTAINER}/${c.id}`,
       breadcrumb: c.location.name,
@@ -71,7 +71,7 @@ export async function searchAndHydrate(query: string, limit = 30): Promise<Searc
       name: i.name,
       typeLabel: ENTITY_LABELS.ITEM,
       href: `/${ENTITY_ROUTE_SEGMENT.ITEM}/${i.id}`,
-      breadcrumb: i.container ? `${i.container.name} #${i.container.number}` : (i.location?.name ?? i.parentItem?.name ?? ""),
+      breadcrumb: i.container ? `#${i.container.number} ${i.container.name}` : (i.location?.name ?? i.parentItem?.name ?? ""),
     });
   }
 

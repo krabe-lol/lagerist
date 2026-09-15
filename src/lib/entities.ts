@@ -111,7 +111,7 @@ export async function getItemLocationChain(itemId: string): Promise<LocationLink
       {
         kind: "container" as const,
         id: container.id,
-        name: `${container.name} #${container.number}`,
+        name: `#${container.number} ${container.name}`,
         href: `/containers/${container.id}`,
       },
     ];

@@ -22,7 +22,7 @@ export default async function EditContainerPage({
       <PageHeader
         breadcrumbs={[
           { label: "Räume", href: "/rooms" },
-          { label: `${container.name} #${container.number}`, href: `/containers/${containerId}` },
+          { label: `#${container.number} ${container.name}`, href: `/containers/${containerId}` },
           { label: "Bearbeiten" },
         ]}
         title="Container bearbeiten"
