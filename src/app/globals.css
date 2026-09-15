@@ -121,36 +121,3 @@ body {
 .lightbox-slide-prev {
   animation: lightbox-slide-prev 200ms ease-out;
 }
-
-/* Detail-page layout (Details column, content tree, QR code): on mobile
-   they stack details -> children -> qr, so the QR code always ends up at
-   the very bottom. On desktop the QR block moves back up to sit right
-   under the Details column instead, independent of how tall the content
-   tree next to it is — named areas (not DOM/auto-placement order) so the
-   two breakpoints can reorder freely. */
-.detail-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  grid-template-areas:
-    "details"
-    "children"
-    "qr";
-  align-items: start;
-}
-@media (min-width: 64rem) {
-  .detail-grid {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    grid-template-areas:
-      "details details children children children"
-      "qr qr children children children";
-  }
-}
-.detail-grid-details {
-  grid-area: details;
-}
-.detail-grid-children {
-  grid-area: children;
-}
-.detail-grid-qr {
-  grid-area: qr;
-}

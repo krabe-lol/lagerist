@@ -6,11 +6,12 @@ export default function QrCodeBlock({ type, id }: { type: EntityType; id: string
   const src = `/api/qr/${segment}/${id}`;
 
   return (
-    <div className="flex flex-col gap-2">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={src} alt="QR-Code" width={128} height={128} className="rounded" />
-      <a href={src} download={`${id}.png`} className="link link-primary text-xs">
-        QR-Code herunterladen
+    <div className="flex items-center gap-3">
+      <a href={src} target="_blank" rel="noopener noreferrer" className="link link-primary text-sm">
+        QR-Code öffnen
+      </a>
+      <a href={src} download={`${id}.png`} className="link link-primary text-sm">
+        Herunterladen
       </a>
     </div>
   );

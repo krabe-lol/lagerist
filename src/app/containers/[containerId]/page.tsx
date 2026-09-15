@@ -32,7 +32,7 @@ export default async function ContainerDetailPage({
   if (!container) notFound();
 
   const [ancestors, rooms, children] = await Promise.all([
-    getRoomAncestors(container.location.id),
+    getRoomAncestors(container.location?.id ?? null),
     prisma.location.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
     getContainerChildren(container.id),
   ]);
@@ -60,8 +60,8 @@ export default async function ContainerDetailPage({
         deleteId={container.id}
       />
 
-      <div className="detail-grid gap-6 lg:gap-20">
-        <div className="detail-grid-details flex flex-col gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5 lg:gap-20">
+        <div className="flex flex-col gap-6 lg:col-span-2">
           <section>
             <h2 className="mb-2 font-semibold">Details</h2>
             <DetailList
@@ -75,7 +75,7 @@ export default async function ContainerDetailPage({
                       />
                       <RoomQuickPicker
                         id={container.id}
-                        currentRoomId={container.location.id}
+                        currentRoomId={container.location?.id}
                         roomOptions={rooms}
                         updateAction={updateContainerLocationAction}
                       />
@@ -96,22 +96,18 @@ export default async function ContainerDetailPage({
                     />
                   ),
                 },
+                { label: "QR-Code", value: <QrCodeBlock type="CONTAINER" id={container.id} /> },
               ]}
             />
           </section>
         </div>
 
         <ChildrenCard
-          className="detail-grid-children"
+          className="lg:col-span-3"
           emptyText="Noch keine Artikel in diesem Container."
           quickAdds={[{ label: "Artikel", href: `/items/new?containerId=${container.id}` }]}
           nodes={children}
         />
-
-        <section className="detail-grid-qr">
-          <h2 className="mb-2 font-semibold">QR-Code</h2>
-          <QrCodeBlock type="CONTAINER" id={container.id} />
-        </section>
       </div>
     </div>
   );

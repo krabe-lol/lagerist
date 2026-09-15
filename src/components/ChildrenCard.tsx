@@ -20,14 +20,14 @@ export default function ChildrenCard({
         {quickAdds && quickAdds.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {quickAdds.map((a) => (
-              <Link key={a.href} href={a.href} className="btn btn-outline btn-xs">
+              <Link key={a.href} href={a.href} className="btn btn-outline btn-sm">
                 + {a.label}
               </Link>
             ))}
           </div>
         )}
       </div>
-      {nodes.length === 0 ? <p className="text-sm text-base-content/60">{emptyText}</p> : <EntityTree nodes={nodes} />}
+      {nodes.length === 0 ? <p className="text-base-content/60">{emptyText}</p> : <EntityTree nodes={nodes} />}
     </div>
   );
 }
