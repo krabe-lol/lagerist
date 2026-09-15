@@ -18,7 +18,7 @@ export async function searchAndHydrate(query: string, limit = 30): Promise<Searc
   const idsByType: Record<EntityType, string[]> = { LOCATION: [], CONTAINER: [], ITEM: [] };
   for (const hit of hits) idsByType[hit.entityType].push(hit.entityId);
 
-  const [locations, containers, items] = await Promise.all([
+  const [rooms, containers, items] = await Promise.all([
     idsByType.LOCATION.length
       ? prisma.location.findMany({
           where: { id: { in: idsByType.LOCATION } },
@@ -35,7 +35,8 @@ export async function searchAndHydrate(query: string, limit = 30): Promise<Searc
       ? prisma.item.findMany({
           where: { id: { in: idsByType.ITEM } },
           include: {
-            container: { select: { name: true } },
+            location: { select: { name: true } },
+            container: { select: { name: true, number: true } },
             parentItem: { select: { name: true } },
           },
         })
@@ -43,7 +44,7 @@ export async function searchAndHydrate(query: string, limit = 30): Promise<Searc
   ]);
 
   const byKey = new Map<string, SearchHit>();
-  for (const l of locations) {
+  for (const l of rooms) {
     byKey.set(`LOCATION-${l.id}`, {
       entityType: "LOCATION",
       id: l.id,
@@ -57,7 +58,7 @@ export async function searchAndHydrate(query: string, limit = 30): Promise<Searc
     byKey.set(`CONTAINER-${c.id}`, {
       entityType: "CONTAINER",
       id: c.id,
-      name: c.name,
+      name: `${c.name} #${c.number}`,
       typeLabel: ENTITY_LABELS.CONTAINER,
       href: `/${ENTITY_ROUTE_SEGMENT.CONTAINER}/${c.id}`,
       breadcrumb: c.location.name,
@@ -70,7 +71,7 @@ export async function searchAndHydrate(query: string, limit = 30): Promise<Searc
       name: i.name,
       typeLabel: ENTITY_LABELS.ITEM,
       href: `/${ENTITY_ROUTE_SEGMENT.ITEM}/${i.id}`,
-      breadcrumb: i.container?.name ?? i.parentItem?.name ?? "",
+      breadcrumb: i.container ? `${i.container.name} #${i.container.number}` : (i.location?.name ?? i.parentItem?.name ?? ""),
     });
   }
 

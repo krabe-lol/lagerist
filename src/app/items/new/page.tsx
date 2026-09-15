@@ -1,41 +1,20 @@
 import { prisma } from "@/lib/db";
 import ItemForm from "@/app/items/ItemForm";
-import Breadcrumbs from "@/components/Breadcrumbs";
-import type { TemplateFieldDef } from "@/lib/constants";
+import PageHeader from "@/components/PageHeader";
 
 export default async function NewItemPage({
   searchParams,
 }: {
-  searchParams: Promise<{ containerId?: string; parentItemId?: string }>;
+  searchParams: Promise<{ roomId?: string }>;
 }) {
-  const { containerId, parentItemId } = await searchParams;
+  const { roomId } = await searchParams;
 
-  const [containers, items, templates] = await Promise.all([
-    prisma.container.findMany({
-      orderBy: { name: "asc" },
-      include: { location: { select: { name: true } } },
-    }),
-    prisma.item.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
-    prisma.template.findMany({ where: { entityType: "ITEM" } }),
-  ]);
+  const rooms = await prisma.location.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } });
 
   return (
     <div>
-      <Breadcrumbs items={[{ label: "Locations", href: "/locations" }, { label: "Neues Item" }]} />
-      <h1 className="mb-6 text-2xl font-bold">Neues Item</h1>
-      <ItemForm
-        mode="new"
-        containerOptions={containers.map((c) => ({ id: c.id, name: c.name, locationName: c.location.name }))}
-        itemOptions={items}
-        templates={templates.map((t) => ({
-          id: t.id,
-          name: t.name,
-          fields: t.fields as unknown as TemplateFieldDef[],
-        }))}
-        initialTags={[]}
-        initialContainerId={containerId}
-        initialParentItemId={parentItemId}
-      />
+      <PageHeader breadcrumbs={[{ label: "Räume", href: "/rooms" }, { label: "Neuer Artikel" }]} title="Neuer Artikel" />
+      <ItemForm mode="new" roomOptions={rooms} initialTags={[]} initialRoomId={roomId} />
     </div>
   );
 }

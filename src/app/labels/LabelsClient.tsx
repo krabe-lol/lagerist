@@ -41,13 +41,13 @@ export default function LabelsClient() {
   return (
     <div>
       <div className="no-print mb-6 flex flex-col gap-3">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <input
             type="search"
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
             placeholder="Entities filtern …"
-            className="input input-bordered max-w-sm"
+            className="input input-bordered w-full sm:max-w-sm"
           />
           <button onClick={() => window.print()} className="btn btn-primary" disabled={selected.size === 0}>
             {selected.size} Label{selected.size !== 1 && "s"} drucken
@@ -65,9 +65,9 @@ export default function LabelsClient() {
                 onChange={() => toggle(e.id)}
                 className="checkbox checkbox-sm"
               />
-              <span className="flex-1">{e.name}</span>
-              {e.subtitle && <span className="text-xs text-base-content/60">{e.subtitle}</span>}
-              <span className="badge badge-ghost badge-sm">{e.typeLabel}</span>
+              <span className="min-w-0 flex-1 truncate">{e.name}</span>
+              {e.subtitle && <span className="hidden shrink-0 text-xs text-base-content/60 sm:inline">{e.subtitle}</span>}
+              <span className="badge badge-ghost badge-sm shrink-0">{e.typeLabel}</span>
             </label>
           ))}
         </div>

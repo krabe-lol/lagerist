@@ -1,11 +1,10 @@
 import TemplateForm from "@/app/templates/TemplateForm";
-import Breadcrumbs from "@/components/Breadcrumbs";
+import PageHeader from "@/components/PageHeader";
 
 export default function NewTemplatePage() {
   return (
     <div>
-      <Breadcrumbs items={[{ label: "Vorlagen", href: "/templates" }, { label: "Neu" }]} />
-      <h1 className="mb-6 text-2xl font-bold">Neue Vorlage</h1>
+      <PageHeader breadcrumbs={[{ label: "Vorlagen", href: "/templates" }, { label: "Neu" }]} title="Neue Vorlage" />
       <TemplateForm mode="new" />
     </div>
   );

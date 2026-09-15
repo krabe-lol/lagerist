@@ -1,30 +1,19 @@
 import { prisma } from "@/lib/db";
 import type { EntityType } from "@/lib/constants";
-import type { TemplateFieldDef } from "@/lib/constants";
 
 interface IndexableEntity {
   name: string;
   description?: string | null;
   tagNames: string[];
-  customFields?: unknown;
-  fieldDefs?: TemplateFieldDef[];
-}
-
-function customFieldsToText(customFields: unknown, fieldDefs?: TemplateFieldDef[]): string {
-  if (!customFields || typeof customFields !== "object") return "";
-  const values = Object.entries(customFields as Record<string, unknown>).map(([key, value]) => {
-    const def = fieldDefs?.find((f) => f.key === key);
-    const label = def?.label ?? key;
-    return `${label} ${value ?? ""}`;
-  });
-  return values.join(" ");
+  /** Extra freeform text to index, e.g. a Container's dimensions/volume. */
+  extraText?: string | null;
 }
 
 /** Inserts or updates the full-text search row for one entity. Delete-then-insert
  * because FTS5 has no UNIQUE/PRIMARY KEY to upsert against. */
 export async function indexEntity(type: EntityType, id: string, entity: IndexableEntity) {
   const tagsText = entity.tagNames.join(" ");
-  const fieldsText = customFieldsToText(entity.customFields, entity.fieldDefs);
+  const fieldsText = entity.extraText ?? "";
 
   await prisma.$executeRawUnsafe(
     `DELETE FROM search_index WHERE entity_type = ? AND entity_id = ?`,

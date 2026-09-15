@@ -1,33 +1,29 @@
 import { prisma } from "@/lib/db";
+import { nextContainerNumber } from "@/lib/entities";
 import ContainerForm from "@/app/containers/ContainerForm";
-import Breadcrumbs from "@/components/Breadcrumbs";
-import type { TemplateFieldDef } from "@/lib/constants";
+import PageHeader from "@/components/PageHeader";
 
 export default async function NewContainerPage({
   searchParams,
 }: {
-  searchParams: Promise<{ locationId?: string }>;
+  searchParams: Promise<{ roomId?: string }>;
 }) {
-  const { locationId } = await searchParams;
-  const [locations, templates] = await Promise.all([
+  const { roomId } = await searchParams;
+  const [rooms, templates, nextNumber] = await Promise.all([
     prisma.location.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
-    prisma.template.findMany({ where: { entityType: "CONTAINER" } }),
+    prisma.containerTemplate.findMany({ orderBy: { name: "asc" } }),
+    nextContainerNumber(),
   ]);
 
   return (
     <div>
-      <Breadcrumbs items={[{ label: "Locations", href: "/locations" }, { label: "Neuer Container" }]} />
-      <h1 className="mb-6 text-2xl font-bold">Neuer Container</h1>
+      <PageHeader breadcrumbs={[{ label: "Räume", href: "/rooms" }, { label: "Neuer Container" }]} title="Neuer Container" />
       <ContainerForm
         mode="new"
-        locationOptions={locations}
-        templates={templates.map((t) => ({
-          id: t.id,
-          name: t.name,
-          fields: t.fields as unknown as TemplateFieldDef[],
-        }))}
-        initialTags={[]}
-        initialLocationId={locationId}
+        roomOptions={rooms}
+        templates={templates}
+        initialRoomId={roomId}
+        nextNumber={nextNumber}
       />
     </div>
   );

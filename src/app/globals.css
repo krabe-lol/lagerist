@@ -1,11 +1,82 @@
 @import "tailwindcss";
+
+/* Full neutral ramp backing the app's dark surfaces. Named/numbered like a typical
+   Tailwind 50-950 scale (50 = near-white, 950 = near-black) so it reads on its own,
+   independent of daisyUI's base-* naming. Hue matches the original dracula theme;
+   graphite-800/850/900/950 are pixel-identical to the old base-100/200/300/400
+   values, so nothing visually changes. */
+@theme {
+  --color-graphite-50: oklch(97.5% 0.006 277.508);
+  --color-graphite-100: oklch(94.5% 0.009 277.508);
+  --color-graphite-200: oklch(88.5% 0.013 277.508);
+  --color-graphite-300: oklch(80.5% 0.016 277.508);
+  --color-graphite-400: oklch(68.5% 0.019 277.508);
+  --color-graphite-500: oklch(56.5% 0.021 277.508);
+  --color-graphite-600: oklch(46.5% 0.021 277.508);
+  --color-graphite-700: oklch(37.5% 0.02 277.508);
+  --color-graphite-800: oklch(28.822% 0.022 277.508);
+  --color-graphite-850: oklch(26.805% 0.02 277.508);
+  --color-graphite-900: oklch(24.787% 0.019 277.508);
+  --color-graphite-950: oklch(22.77% 0.018 277.508);
+}
+
 @plugin "daisyui" {
-  themes: dracula --default;
+  themes: false;
+}
+
+/* Local copy of daisyUI's "dracula" theme (node_modules/daisyui/theme/dracula.css),
+   with base-100/200/300/400 wired to the graphite ramp above instead of their own
+   literal values. Defined here instead of relying on the built-in theme name so
+   daisyUI upgrades can't change our colors out from under us. */
+@plugin "daisyui/theme" {
+  name: "lagerist";
+  default: true;
+  prefersdark: false;
+  color-scheme: dark;
+  --color-base-100: var(--color-graphite-800);
+  --color-base-200: var(--color-graphite-850);
+  --color-base-300: var(--color-graphite-900);
+  --color-base-400: var(--color-graphite-950);
+  --color-base-content: oklch(97.747% 0.007 106.545);
+  --color-primary: oklch(75.461% 0.183 346.812);
+  --color-primary-content: oklch(15.092% 0.036 346.812);
+  --color-secondary: oklch(74.202% 0.148 301.883);
+  --color-secondary-content: oklch(14.84% 0.029 301.883);
+  --color-accent: oklch(83.392% 0.124 66.558);
+  --color-accent-content: oklch(16.678% 0.024 66.558);
+  --color-neutral: oklch(39.445% 0.032 275.524);
+  --color-neutral-content: oklch(87.889% 0.006 275.524);
+  --color-info: oklch(88.263% 0.093 212.846);
+  --color-info-content: oklch(17.652% 0.018 212.846);
+  --color-success: oklch(87.099% 0.219 148.024);
+  --color-success-content: oklch(17.419% 0.043 148.024);
+  --color-warning: oklch(95.533% 0.134 112.757);
+  --color-warning-content: oklch(19.106% 0.026 112.757);
+  --color-error: oklch(68.22% 0.206 24.43);
+  --color-error-content: oklch(13.644% 0.041 24.43);
+  --radius-selector: 1rem;
+  --radius-field: 0.5rem;
+  --radius-box: 1rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
 }
 
 @theme inline {
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+}
+
+.bg-base-400 {
+  background-color: var(--color-base-400);
+}
+.text-base-400 {
+  color: var(--color-base-400);
+}
+.border-base-400 {
+  border-color: var(--color-base-400);
 }
 
 body {

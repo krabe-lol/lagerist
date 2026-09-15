@@ -40,13 +40,13 @@ export default async function SearchPage({
           <Link
             key={`${r.entityType}-${r.id}`}
             href={r.href}
-            className="flex items-center justify-between rounded-box border border-base-300 bg-base-100 px-4 py-3 hover:border-primary"
+            className="flex items-center justify-between gap-3 rounded-box border border-base-300 bg-base-100 px-4 py-3 hover:border-primary"
           >
-            <div>
-              <p className="font-medium">{r.name}</p>
-              {r.breadcrumb && <p className="text-xs text-base-content/60">{r.breadcrumb}</p>}
+            <div className="min-w-0">
+              <p className="truncate font-medium">{r.name}</p>
+              {r.breadcrumb && <p className="truncate text-xs text-base-content/60">{r.breadcrumb}</p>}
             </div>
-            <span className="badge badge-ghost badge-sm">{r.typeLabel}</span>
+            <span className="badge badge-ghost badge-sm shrink-0">{r.typeLabel}</span>
           </Link>
         ))}
       </div>

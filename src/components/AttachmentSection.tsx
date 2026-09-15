@@ -36,7 +36,7 @@ export default function AttachmentSection({
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h3 className="mb-2 font-semibold">Fotos</h3>
+        <h4 className="mb-2 font-semibold">Fotos</h4>
         <div className="mb-3 flex flex-wrap gap-3">
           {photos.map((photo) => (
             <div key={photo.id} className="flex flex-col items-center gap-1">
@@ -54,7 +54,7 @@ export default function AttachmentSection({
                     <input type="hidden" name="entityType" value={entityType} />
                     <input type="hidden" name="entityId" value={entityId} />
                     <input type="hidden" name="attachmentId" value={photo.id} />
-                    <button className="btn btn-ghost btn-xs" type="submit">
+                    <button className="btn btn-outline btn-xs" type="submit">
                       Als Titelbild
                     </button>
                   </form>
@@ -63,7 +63,7 @@ export default function AttachmentSection({
                   <input type="hidden" name="entityType" value={entityType} />
                   <input type="hidden" name="entityId" value={entityId} />
                   <input type="hidden" name="attachmentId" value={photo.id} />
-                  <button className="btn btn-ghost btn-xs text-error" type="submit">
+                  <button className="btn btn-outline btn-error btn-xs" type="submit">
                     Löschen
                   </button>
                 </form>
@@ -106,7 +106,7 @@ export default function AttachmentSection({
                   <input type="hidden" name="entityType" value={entityType} />
                   <input type="hidden" name="entityId" value={entityId} />
                   <input type="hidden" name="attachmentId" value={file.id} />
-                  <button className="btn btn-ghost btn-xs text-error" type="submit">
+                  <button className="btn btn-outline btn-error btn-xs" type="submit">
                     Löschen
                   </button>
                 </form>

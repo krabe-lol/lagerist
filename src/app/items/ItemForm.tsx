@@ -1,51 +1,39 @@
-import TemplateFieldsForm, { type TemplateOption } from "@/components/TemplateFieldsForm";
-import ItemParentPicker, {
-  type ContainerOption,
-  type ItemOption,
-} from "@/components/ItemParentPicker";
-import { createItemAction, updateItemAction } from "@/app/items/actions";
-import type { TemplateFieldDef } from "@/lib/constants";
+import FormField from "@/components/FormField";
+import { createItemAction, updateItemAction } from "@/app/items/itemActions";
+
+interface RoomOption {
+  id: string;
+  name: string;
+}
 
 interface ExistingItem {
   id: string;
   name: string;
   description: string | null;
   quantity: number;
-  containerId: string | null;
-  parentItemId: string | null;
-  templateId: string | null;
-  customFields: unknown;
+  locationId: string | null;
 }
 
 export default function ItemForm({
   mode,
   item,
-  containerOptions,
-  itemOptions,
-  templates,
+  roomOptions,
   initialTags,
-  initialContainerId,
-  initialParentItemId,
+  initialRoomId,
 }: {
   mode: "new" | "edit";
   item?: ExistingItem;
-  containerOptions: ContainerOption[];
-  itemOptions: ItemOption[];
-  templates: { id: string; name: string; fields: TemplateFieldDef[] }[];
+  roomOptions: RoomOption[];
   initialTags: string[];
-  initialContainerId?: string;
-  initialParentItemId?: string;
+  initialRoomId?: string;
 }) {
   const action = mode === "new" ? createItemAction : updateItemAction;
-  const parentKind: "container" | "item" =
-    (item?.parentItemId ?? initialParentItemId) ? "item" : "container";
 
   return (
     <form action={action} className="flex max-w-2xl flex-col gap-4">
       {mode === "edit" && item && <input type="hidden" name="id" value={item.id} />}
 
-      <label className="form-control">
-        <span className="label-text mb-1">Name</span>
+      <FormField label="Name">
         <input
           type="text"
           name="name"
@@ -53,20 +41,18 @@ export default function ItemForm({
           defaultValue={item?.name}
           className="input input-bordered"
         />
-      </label>
+      </FormField>
 
-      <label className="form-control">
-        <span className="label-text mb-1">Beschreibung</span>
+      <FormField label="Beschreibung">
         <textarea
           name="description"
           defaultValue={item?.description ?? ""}
           className="textarea textarea-bordered"
           rows={3}
         />
-      </label>
+      </FormField>
 
-      <label className="form-control max-w-32">
-        <span className="label-text mb-1">Menge</span>
+      <FormField label="Menge" className="form-control max-w-32">
         <input
           type="number"
           name="quantity"
@@ -74,21 +60,27 @@ export default function ItemForm({
           defaultValue={item?.quantity ?? 1}
           className="input input-bordered"
         />
-      </label>
+      </FormField>
 
-      <div>
-        <span className="label-text mb-1 block">Ort</span>
-        <ItemParentPicker
-          containers={containerOptions}
-          items={itemOptions}
-          initialParentKind={parentKind}
-          initialContainerId={item?.containerId ?? initialContainerId}
-          initialParentItemId={item?.parentItemId ?? initialParentItemId}
-        />
-      </div>
+      <FormField label="Raum">
+        <select
+          name="locationId"
+          required
+          defaultValue={item?.locationId ?? initialRoomId ?? ""}
+          className="select select-bordered"
+        >
+          <option value="" disabled>
+            Bitte wählen …
+          </option>
+          {roomOptions.map((opt) => (
+            <option key={opt.id} value={opt.id}>
+              {opt.name}
+            </option>
+          ))}
+        </select>
+      </FormField>
 
-      <label className="form-control">
-        <span className="label-text mb-1">Tags (durch Komma getrennt)</span>
+      <FormField label="Tags (durch Komma getrennt)">
         <input
           type="text"
           name="tags"
@@ -96,16 +88,10 @@ export default function ItemForm({
           placeholder="z. B. elektronik, kabel"
           className="input input-bordered"
         />
-      </label>
-
-      <TemplateFieldsForm
-        templates={templates as TemplateOption[]}
-        initialTemplateId={item?.templateId}
-        initialCustomFields={item?.customFields as Record<string, string> | undefined}
-      />
+      </FormField>
 
       <button type="submit" className="btn btn-primary self-start">
-        {mode === "new" ? "Item anlegen" : "Speichern"}
+        {mode === "new" ? "Artikel anlegen" : "Speichern"}
       </button>
     </form>
   );

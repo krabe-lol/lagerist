@@ -14,6 +14,7 @@
     "better-sqlite3": "^13.0.3",
     "daisyui": "^5.7.37",
     "jsqr": "^1.4.0",
+    "lucide-react": "^1.45.0",
     "next": "16.3.5",
     "prisma": "^7.10.0",
     "qrcode": "^1.5.4",

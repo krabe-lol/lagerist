@@ -1,12 +1,11 @@
-import TemplateFieldsEditor from "@/components/TemplateFieldsEditor";
-import { createTemplateAction, updateTemplateAction } from "@/app/templates/actions";
-import { ENTITY_LABELS, ENTITY_TYPES, type TemplateFieldDef } from "@/lib/constants";
+import FormField from "@/components/FormField";
+import { createTemplateAction, updateTemplateAction } from "@/app/templates/templateActions";
 
 interface ExistingTemplate {
   id: string;
   name: string;
-  entityType: string;
-  fields: unknown;
+  dimensions: string | null;
+  volume: string | null;
 }
 
 export default function TemplateForm({
@@ -19,45 +18,39 @@ export default function TemplateForm({
   const action = mode === "new" ? createTemplateAction : updateTemplateAction;
 
   return (
-    <form action={action} className="flex max-w-3xl flex-col gap-4">
+    <form action={action} className="flex max-w-md flex-col gap-4">
       {mode === "edit" && template && <input type="hidden" name="id" value={template.id} />}
 
-      <label className="form-control max-w-sm">
-        <span className="label-text mb-1">Name der Vorlage</span>
+      <FormField label="Name">
         <input
           type="text"
           name="name"
           required
           defaultValue={template?.name}
+          placeholder="z. B. EzyStorage 18L"
           className="input input-bordered"
         />
-      </label>
+      </FormField>
 
-      <label className="form-control max-w-sm">
-        <span className="label-text mb-1">Für Entity-Typ</span>
-        <select
-          name="entityType"
-          required
-          defaultValue={template?.entityType}
-          className="select select-bordered"
-        >
-          <option value="" disabled>
-            Bitte wählen …
-          </option>
-          {ENTITY_TYPES.map((t) => (
-            <option key={t} value={t}>
-              {ENTITY_LABELS[t]}
-            </option>
-          ))}
-        </select>
-      </label>
-
-      <div>
-        <span className="label-text mb-1 block">Felder</span>
-        <TemplateFieldsEditor
-          initialFields={(template?.fields as TemplateFieldDef[] | undefined) ?? []}
+      <FormField label="Maße (B x T x H)">
+        <input
+          type="text"
+          name="dimensions"
+          defaultValue={template?.dimensions ?? ""}
+          placeholder="z. B. 40 x 30 x 25 cm"
+          className="input input-bordered"
         />
-      </div>
+      </FormField>
+
+      <FormField label="Volumen">
+        <input
+          type="text"
+          name="volume"
+          defaultValue={template?.volume ?? ""}
+          placeholder="z. B. 18 L"
+          className="input input-bordered"
+        />
+      </FormField>
 
       <button type="submit" className="btn btn-primary self-start">
         {mode === "new" ? "Vorlage anlegen" : "Speichern"}

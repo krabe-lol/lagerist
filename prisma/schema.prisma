@@ -1,7 +1,6 @@
 // Lagerist data model
-// Note: SQLite has no native enum support in Prisma, so "kind"/"entityType"/
-// custom field "type" are plain strings validated in application code
-// (see src/lib/constants.ts for the allowed values).
+// Note: SQLite has no native enum support in Prisma, so "kind" is a plain
+// string validated in application code (see src/lib/constants.ts).
 
 generator client {
   provider = "prisma-client"
@@ -16,7 +15,6 @@ model Location {
   id          String   @id @default(cuid())
   name        String
   description String?
-  customFields Json    @default("{}")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -24,24 +22,40 @@ model Location {
   parent   Location?  @relation("LocationTree", fields: [parentId], references: [id], onDelete: Cascade)
   children Location[] @relation("LocationTree")
 
-  templateId String?
-  template   Template? @relation(fields: [templateId], references: [id], onDelete: SetNull)
-
   primaryPhotoId String?     @unique
   primaryPhoto   Attachment? @relation("LocationPrimaryPhoto", fields: [primaryPhotoId], references: [id], onDelete: SetNull)
 
   containers  Container[]
-  attachments Attachment[]  @relation("LocationAttachments")
-  tags        LocationTag[]
+  items       Item[]
+  attachments Attachment[] @relation("LocationAttachments")
 
   @@index([parentId])
 }
 
+// Container "types" a user can pick when creating a Container (e.g. a specific
+// storage-box product like "EzyStorage 18L"). Picking one prefills the
+// Container's name plus its dimensions/volume, which stay editable afterwards.
+model ContainerTemplate {
+  id         String   @id @default(cuid())
+  name       String
+  dimensions String?
+  volume     String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  containers Container[]
+}
+
 model Container {
   id          String   @id @default(cuid())
+  // System-assigned running number (see prepareNextContainerNumber in
+  // src/lib/entities.ts) so that multiple containers sharing the same
+  // templated name (e.g. several "EzyStorage 18L" boxes) stay distinguishable.
+  number      Int      @unique
   name        String
   description String?
-  customFields Json    @default("{}")
+  dimensions  String?
+  volume      String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -49,14 +63,13 @@ model Container {
   location   Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
 
   templateId String?
-  template   Template? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  template   ContainerTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
 
   primaryPhotoId String?     @unique
   primaryPhoto   Attachment? @relation("ContainerPrimaryPhoto", fields: [primaryPhotoId], references: [id], onDelete: SetNull)
 
   items       Item[]
-  attachments Attachment[]   @relation("ContainerAttachments")
-  tags        ContainerTag[]
+  attachments Attachment[] @relation("ContainerAttachments")
 
   @@index([locationId])
 }
@@ -66,12 +79,14 @@ model Item {
   name        String
   description String?
   quantity    Int      @default(1)
-  customFields Json    @default("{}")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  // Exactly one of containerId / parentItemId is set:
-  // top-level items live directly in a container, sub-items hang off a parent item.
+  // Exactly one of locationId / containerId / parentItemId is set: an item
+  // lives directly in a location, in a container, or as a sub-item of another item.
+  locationId String?
+  location   Location? @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
   containerId String?
   container   Container? @relation(fields: [containerId], references: [id], onDelete: Cascade)
 
@@ -79,32 +94,15 @@ model Item {
   parentItem   Item?  @relation("ItemTree", fields: [parentItemId], references: [id], onDelete: Cascade)
   subItems     Item[] @relation("ItemTree")
 
-  templateId String?
-  template   Template? @relation(fields: [templateId], references: [id], onDelete: SetNull)
-
   primaryPhotoId String?     @unique
   primaryPhoto   Attachment? @relation("ItemPrimaryPhoto", fields: [primaryPhotoId], references: [id], onDelete: SetNull)
 
   attachments Attachment[] @relation("ItemAttachments")
   tags        ItemTag[]
 
+  @@index([locationId])
   @@index([containerId])
   @@index([parentItemId])
-}
-
-// entityType: "LOCATION" | "CONTAINER" | "ITEM"
-// fields: JSON array of { key, label, type: "TEXT"|"NUMBER"|"DATE"|"BOOLEAN", defaultValue? }
-model Template {
-  id         String   @id @default(cuid())
-  name       String
-  entityType String
-  fields     Json     @default("[]")
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  locations  Location[]
-  containers Container[]
-  items      Item[]
 }
 
 model Tag {
@@ -112,27 +110,7 @@ model Tag {
   name  String  @unique
   color String?
 
-  locationTags  LocationTag[]
-  containerTags ContainerTag[]
-  itemTags      ItemTag[]
-}
-
-model LocationTag {
-  locationId String
-  tagId      String
-  location   Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
-  tag        Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
-
-  @@id([locationId, tagId])
-}
-
-model ContainerTag {
-  containerId String
-  tagId       String
-  container   Container @relation(fields: [containerId], references: [id], onDelete: Cascade)
-  tag         Tag       @relation(fields: [tagId], references: [id], onDelete: Cascade)
-
-  @@id([containerId, tagId])
+  itemTags ItemTag[]
 }
 
 model ItemTag {

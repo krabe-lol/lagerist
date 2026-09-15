@@ -1,80 +1,64 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
+import { getRoomChildren } from "@/lib/entities";
 import StatCard from "@/components/StatCard";
-import { ENTITY_LABELS, ENTITY_ROUTE_SEGMENT, type EntityType } from "@/lib/constants";
-
-interface RecentEntry {
-  type: EntityType;
-  id: string;
-  name: string;
-  updatedAt: Date;
-}
+import EntityTree from "@/components/EntityTree";
 
 export default async function DashboardPage() {
-  const [locationCount, containerCount, itemCount, recentLocations, recentContainers, recentItems] =
-    await Promise.all([
-      prisma.location.count(),
-      prisma.container.count(),
-      prisma.item.count(),
-      prisma.location.findMany({ orderBy: { updatedAt: "desc" }, take: 5 }),
-      prisma.container.findMany({ orderBy: { updatedAt: "desc" }, take: 5 }),
-      prisma.item.findMany({ orderBy: { updatedAt: "desc" }, take: 5 }),
-    ]);
+  const [roomCount, containerCount, itemCount, topLevelRooms] = await Promise.all([
+    prisma.location.count(),
+    prisma.container.count(),
+    prisma.item.count(),
+    prisma.location.findMany({
+      where: { parentId: null },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true, description: true },
+    }),
+  ]);
 
-  const recent: RecentEntry[] = [
-    ...recentLocations.map((l) => ({ type: "LOCATION" as const, id: l.id, name: l.name, updatedAt: l.updatedAt })),
-    ...recentContainers.map((c) => ({ type: "CONTAINER" as const, id: c.id, name: c.name, updatedAt: c.updatedAt })),
-    ...recentItems.map((i) => ({ type: "ITEM" as const, id: i.id, name: i.name, updatedAt: i.updatedAt })),
-  ]
-    .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())
-    .slice(0, 8);
+  const rooms = await Promise.all(
+    topLevelRooms.map(async (room) => ({ ...room, children: await getRoomChildren(room.id) }))
+  );
 
   return (
     <div>
       <h1 className="mb-6 text-2xl font-bold">Dashboard</h1>
 
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard label="Locations" value={locationCount} href="/locations" />
+        <StatCard label="Räume" value={roomCount} href="/rooms" />
         <StatCard label="Container" value={containerCount} />
-        <StatCard label="Items" value={itemCount} />
+        <StatCard label="Artikel" value={itemCount} />
       </div>
 
-      <div className="mb-8 flex flex-wrap gap-2">
-        <Link href="/locations/new" className="btn btn-primary btn-sm">
-          + Neue Location
-        </Link>
-        <Link href="/templates" className="btn btn-sm">
-          Vorlagen verwalten
-        </Link>
-        <Link href="/scan" className="btn btn-sm">
-          QR-Code scannen
-        </Link>
-        <Link href="/labels" className="btn btn-sm">
-          Labels drucken
-        </Link>
-      </div>
-
-      <section>
-        <h2 className="mb-3 font-semibold">Zuletzt geändert</h2>
-        {recent.length === 0 ? (
-          <p className="text-base-content/60">
-            Noch nichts angelegt. Starte mit einer neuen Location.
-          </p>
-        ) : (
-          <div className="flex flex-col gap-2">
-            {recent.map((entry) => (
-              <Link
-                key={`${entry.type}-${entry.id}`}
-                href={`/${ENTITY_ROUTE_SEGMENT[entry.type]}/${entry.id}`}
-                className="flex items-center justify-between rounded-box border border-base-300 bg-base-100 px-4 py-2 hover:border-primary"
-              >
-                <span>{entry.name}</span>
-                <span className="badge badge-ghost badge-sm">{ENTITY_LABELS[entry.type]}</span>
+      {rooms.length === 0 ? (
+        <p className="text-base-content/60">
+          Noch keine Räume angelegt.{" "}
+          <Link href="/rooms/new" className="link link-primary">
+            Jetzt anlegen
+          </Link>
+          .
+        </p>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          {rooms.map((room) => (
+            <div key={room.id} className="rounded-box border border-base-300 bg-base-100 p-4">
+              <Link href={`/rooms/${room.id}`} className="font-semibold hover:text-primary">
+                {room.name}
               </Link>
-            ))}
-          </div>
-        )}
-      </section>
+              {room.description && (
+                <p className="mt-1 truncate text-sm text-base-content/60">{room.description}</p>
+              )}
+              <div className="mt-3">
+                {room.children.length === 0 ? (
+                  <p className="px-2 py-1 text-xs text-base-content/60">Leer</p>
+                ) : (
+                  <EntityTree nodes={room.children} />
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

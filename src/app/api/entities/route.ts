@@ -3,26 +3,26 @@ import { prisma } from "@/lib/db";
 import { ENTITY_ROUTE_SEGMENT } from "@/lib/constants";
 
 export async function GET() {
-  const [locations, containers, items] = await Promise.all([
+  const [rooms, containers, items] = await Promise.all([
     prisma.location.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
     prisma.container.findMany({
       orderBy: { name: "asc" },
-      select: { id: true, name: true, location: { select: { name: true } } },
+      select: { id: true, name: true, number: true, location: { select: { name: true } } },
     }),
     prisma.item.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
   ]);
 
   const all = [
-    ...locations.map((l) => ({
+    ...rooms.map((l) => ({
       id: l.id,
       name: l.name,
-      typeLabel: "Location",
+      typeLabel: "Raum",
       segment: ENTITY_ROUTE_SEGMENT.LOCATION,
       subtitle: "",
     })),
     ...containers.map((c) => ({
       id: c.id,
-      name: c.name,
+      name: `${c.name} #${c.number}`,
       typeLabel: "Container",
       segment: ENTITY_ROUTE_SEGMENT.CONTAINER,
       subtitle: c.location.name,
@@ -30,7 +30,7 @@ export async function GET() {
     ...items.map((i) => ({
       id: i.id,
       name: i.name,
-      typeLabel: "Item",
+      typeLabel: "Artikel",
       segment: ENTITY_ROUTE_SEGMENT.ITEM,
       subtitle: "",
     })),

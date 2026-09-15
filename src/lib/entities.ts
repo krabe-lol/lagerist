@@ -1,17 +1,17 @@
 import { prisma } from "@/lib/db";
 import { indexEntity, removeEntityFromIndex } from "@/lib/search";
 import { deleteAttachmentFile } from "@/lib/attachments";
-import type { EntityType, TemplateFieldDef } from "@/lib/constants";
+import type { EntityType } from "@/lib/constants";
 
-// ---- Tags ---------------------------------------------------------------
+// ---- Tags (Items only — Locations and Containers don't have tags) --------
 
 export function normalizeTagName(name: string): string {
   return name.trim().toLowerCase();
 }
 
-/** Replaces all tag assignments of one entity with the given (free-typed) tag names,
+/** Replaces all tag assignments of one item with the given (free-typed) tag names,
  * creating any Tag rows that don't exist yet. */
-export async function setEntityTags(type: EntityType, entityId: string, rawNames: string[]) {
+export async function setItemTags(itemId: string, rawNames: string[]) {
   const names = Array.from(new Set(rawNames.map(normalizeTagName).filter(Boolean)));
 
   const tags = await Promise.all(
@@ -19,92 +19,24 @@ export async function setEntityTags(type: EntityType, entityId: string, rawNames
   );
   const tagIds = tags.map((t) => t.id);
 
-  switch (type) {
-    case "LOCATION":
-      await prisma.locationTag.deleteMany({ where: { locationId: entityId } });
-      if (tagIds.length > 0) {
-        await prisma.locationTag.createMany({
-          data: tagIds.map((tagId) => ({ locationId: entityId, tagId })),
-        });
-      }
-      break;
-    case "CONTAINER":
-      await prisma.containerTag.deleteMany({ where: { containerId: entityId } });
-      if (tagIds.length > 0) {
-        await prisma.containerTag.createMany({
-          data: tagIds.map((tagId) => ({ containerId: entityId, tagId })),
-        });
-      }
-      break;
-    case "ITEM":
-      await prisma.itemTag.deleteMany({ where: { itemId: entityId } });
-      if (tagIds.length > 0) {
-        await prisma.itemTag.createMany({ data: tagIds.map((tagId) => ({ itemId: entityId, tagId })) });
-      }
-      break;
+  await prisma.itemTag.deleteMany({ where: { itemId } });
+  if (tagIds.length > 0) {
+    await prisma.itemTag.createMany({ data: tagIds.map((tagId) => ({ itemId, tagId })) });
   }
 }
 
-export async function getTagNames(type: EntityType, entityId: string): Promise<string[]> {
-  switch (type) {
-    case "LOCATION": {
-      const rows = await prisma.locationTag.findMany({
-        where: { locationId: entityId },
-        include: { tag: true },
-      });
-      return rows.map((r) => r.tag.name);
-    }
-    case "CONTAINER": {
-      const rows = await prisma.containerTag.findMany({
-        where: { containerId: entityId },
-        include: { tag: true },
-      });
-      return rows.map((r) => r.tag.name);
-    }
-    case "ITEM": {
-      const rows = await prisma.itemTag.findMany({
-        where: { itemId: entityId },
-        include: { tag: true },
-      });
-      return rows.map((r) => r.tag.name);
-    }
-  }
+export async function getItemTags(itemId: string): Promise<string[]> {
+  const rows = await prisma.itemTag.findMany({ where: { itemId }, include: { tag: true } });
+  return rows.map((r) => r.tag.name);
 }
 
-// ---- Templates / custom fields ------------------------------------------
+// ---- Container numbering --------------------------------------------------
 
-export async function getTemplateFieldDefs(
-  templateId: string | null | undefined
-): Promise<TemplateFieldDef[]> {
-  if (!templateId) return [];
-  const template = await prisma.template.findUnique({ where: { id: templateId } });
-  if (!template) return [];
-  return (template.fields as unknown as TemplateFieldDef[]) ?? [];
-}
-
-export function defaultCustomFieldsFromDefs(defs: TemplateFieldDef[]): Record<string, string> {
-  const values: Record<string, string> = {};
-  for (const def of defs) values[def.key] = def.defaultValue ?? "";
-  return values;
-}
-
-/** Reads the `cf_<key>` form fields that TemplateFieldsForm renders for the given
- * field definitions. Checkboxes only appear in FormData when checked, so booleans
- * need the explicit presence check rather than a plain `.get()`. */
-export function buildCustomFieldsFromForm(
-  formData: FormData,
-  defs: TemplateFieldDef[]
-): Record<string, string> {
-  const values: Record<string, string> = {};
-  for (const def of defs) {
-    const name = `cf_${def.key}`;
-    if (def.type === "BOOLEAN") {
-      values[def.key] = formData.get(name) === "on" ? "true" : "false";
-    } else {
-      values[def.key] = (formData.get(name) as string | null) ?? "";
-    }
-  }
-  return values;
+/** Containers get a system-assigned running number (see schema.prisma) so
+ * multiple containers sharing the same templated name stay distinguishable. */
+export async function nextContainerNumber(): Promise<number> {
+  const result = await prisma.container.aggregate({ _max: { number: true } });
+  return (result._max.number ?? 0) + 1;
 }
 
 // ---- Search index sync ---------------------------------------------------
@@ -114,29 +46,25 @@ interface ReindexInput {
   id: string;
   name: string;
   description?: string | null;
-  templateId?: string | null;
-  customFields: unknown;
+  /** Extra freeform text to index, e.g. a Container's dimensions/volume. */
+  extraText?: string | null;
 }
 
 export async function reindexEntity(input: ReindexInput) {
-  const [tagNames, fieldDefs] = await Promise.all([
-    getTagNames(input.type, input.id),
-    getTemplateFieldDefs(input.templateId),
-  ]);
+  const tagNames = input.type === "ITEM" ? await getItemTags(input.id) : [];
   await indexEntity(input.type, input.id, {
     name: input.name,
     description: input.description,
     tagNames,
-    customFields: input.customFields,
-    fieldDefs,
+    extraText: input.extraText,
   });
 }
 
-export async function getLocationAncestors(
-  locationId: string | null
+export async function getRoomAncestors(
+  roomId: string | null
 ): Promise<{ id: string; name: string }[]> {
   const ancestors: { id: string; name: string }[] = [];
-  let currentId = locationId;
+  let currentId = roomId;
   while (currentId) {
     const loc = await prisma.location.findUnique({
       where: { id: currentId },
@@ -149,39 +77,85 @@ export async function getLocationAncestors(
   return ancestors;
 }
 
-export async function getItemAncestors(itemId: string): Promise<{
-  locationAncestors: { id: string; name: string }[];
-  container: { id: string; name: string } | null;
-  itemChain: { id: string; name: string }[];
-}> {
-  const itemChain: { id: string; name: string }[] = [];
-  let current = await prisma.item.findUnique({
-    where: { id: itemId },
-    select: { id: true, name: true, containerId: true, parentItemId: true },
+// ---- Content trees (for nested "what's stored in what" listings) ---------
+//
+// Items are always leaves: an item can only ever be placed directly in a Room,
+// never inside a Container or another Item, so ItemNode has no children of its own.
+
+export interface ItemNode {
+  kind: "item";
+  id: string;
+  name: string;
+  quantity: number;
+  href: string;
+}
+
+export interface ContainerNode {
+  kind: "container";
+  id: string;
+  name: string;
+  number: number;
+  href: string;
+  children: ItemNode[];
+}
+
+export interface RoomNode {
+  kind: "room";
+  id: string;
+  name: string;
+  href: string;
+  children: EntityNode[];
+}
+
+export type EntityNode = RoomNode | ContainerNode | ItemNode;
+
+function buildItemNode(item: { id: string; name: string; quantity: number }): ItemNode {
+  return { kind: "item", id: item.id, name: item.name, quantity: item.quantity, href: `/items/${item.id}` };
+}
+
+export async function getContainerChildren(containerId: string): Promise<ItemNode[]> {
+  const items = await prisma.item.findMany({
+    where: { containerId },
+    orderBy: { name: "asc" },
+    select: { id: true, name: true, quantity: true },
   });
+  return items.map(buildItemNode);
+}
 
-  while (current?.parentItemId) {
-    const parent = await prisma.item.findUnique({
-      where: { id: current.parentItemId },
-      select: { id: true, name: true, containerId: true, parentItemId: true },
-    });
-    if (!parent) break;
-    itemChain.unshift({ id: parent.id, name: parent.name });
-    current = parent;
-  }
+async function buildContainerNode(container: { id: string; name: string; number: number }): Promise<ContainerNode> {
+  const children = await getContainerChildren(container.id);
+  return {
+    kind: "container",
+    id: container.id,
+    name: container.name,
+    number: container.number,
+    href: `/containers/${container.id}`,
+    children,
+  };
+}
 
-  if (!current?.containerId) {
-    return { locationAncestors: [], container: null, itemChain };
-  }
+export async function getRoomChildren(roomId: string): Promise<EntityNode[]> {
+  const [subRooms, containers, items] = await Promise.all([
+    prisma.location.findMany({ where: { parentId: roomId }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    prisma.container.findMany({
+      where: { locationId: roomId },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true, number: true },
+    }),
+    prisma.item.findMany({ where: { locationId: roomId }, orderBy: { name: "asc" }, select: { id: true, name: true, quantity: true } }),
+  ]);
 
-  const container = await prisma.container.findUnique({
-    where: { id: current.containerId },
-    select: { id: true, name: true, locationId: true },
-  });
-  if (!container) return { locationAncestors: [], container: null, itemChain };
+  const [roomNodes, containerNodes] = await Promise.all([
+    Promise.all(subRooms.map(buildRoomNode)),
+    Promise.all(containers.map(buildContainerNode)),
+  ]);
 
-  const locationAncestors = await getLocationAncestors(container.locationId);
-  return { locationAncestors, container: { id: container.id, name: container.name }, itemChain };
+  return [...roomNodes, ...containerNodes, ...items.map(buildItemNode)];
+}
+
+async function buildRoomNode(room: { id: string; name: string }): Promise<RoomNode> {
+  const children = await getRoomChildren(room.id);
+  return { kind: "room", id: room.id, name: room.name, href: `/rooms/${room.id}`, children };
 }
 
 // ---- Subtree collection (for cascading file/index cleanup on delete) ----
@@ -206,13 +180,13 @@ async function itemSubtreeIdsFromSeeds(seedIds: string[]): Promise<string[]> {
 }
 
 interface Subtree {
-  locationIds: string[];
+  roomIds: string[];
   containerIds: string[];
   itemIds: string[];
 }
 
-export async function collectLocationSubtree(rootId: string): Promise<Subtree> {
-  const locationIds = await queryIds(
+export async function collectRoomSubtree(rootId: string): Promise<Subtree> {
+  const roomIds = await queryIds(
     `WITH RECURSIVE sub(id) AS (
        SELECT id FROM "Location" WHERE id = ?
        UNION ALL
@@ -223,14 +197,14 @@ export async function collectLocationSubtree(rootId: string): Promise<Subtree> {
   );
 
   const containerIds =
-    locationIds.length === 0
+    roomIds.length === 0
       ? []
       : await queryIds(
-          `SELECT id FROM "Container" WHERE "locationId" IN (${locationIds.map(() => "?").join(",")})`,
-          locationIds
+          `SELECT id FROM "Container" WHERE "locationId" IN (${roomIds.map(() => "?").join(",")})`,
+          roomIds
         );
 
-  const topLevelItemIds =
+  const itemsInContainers =
     containerIds.length === 0
       ? []
       : await queryIds(
@@ -238,32 +212,40 @@ export async function collectLocationSubtree(rootId: string): Promise<Subtree> {
           containerIds
         );
 
-  const itemIds = await itemSubtreeIdsFromSeeds(topLevelItemIds);
+  const itemsDirectlyInRooms =
+    roomIds.length === 0
+      ? []
+      : await queryIds(
+          `SELECT id FROM "Item" WHERE "locationId" IN (${roomIds.map(() => "?").join(",")})`,
+          roomIds
+        );
 
-  return { locationIds, containerIds, itemIds };
+  const itemIds = await itemSubtreeIdsFromSeeds([...itemsInContainers, ...itemsDirectlyInRooms]);
+
+  return { roomIds, containerIds, itemIds };
 }
 
 export async function collectContainerSubtree(rootId: string): Promise<Subtree> {
   const topLevelItemIds = await queryIds(`SELECT id FROM "Item" WHERE "containerId" = ?`, [rootId]);
   const itemIds = await itemSubtreeIdsFromSeeds(topLevelItemIds);
-  return { locationIds: [], containerIds: [rootId], itemIds };
+  return { roomIds: [], containerIds: [rootId], itemIds };
 }
 
 export async function collectItemSubtree(rootId: string): Promise<Subtree> {
   const itemIds = await itemSubtreeIdsFromSeeds([rootId]);
-  return { locationIds: [], containerIds: [], itemIds };
+  return { roomIds: [], containerIds: [], itemIds };
 }
 
 /** Call BEFORE the actual `prisma.<model>.delete(...)`. Captures everything that
  * the DB-level ON DELETE CASCADE is about to remove, so files on disk and the
  * (separate, non-cascading) FTS index can be cleaned up afterwards. */
 export async function prepareSubtreeCleanup(subtree: Subtree) {
-  const { locationIds, containerIds, itemIds } = subtree;
+  const { roomIds, containerIds, itemIds } = subtree;
   const clauses: string[] = [];
   const params: string[] = [];
-  if (locationIds.length) {
-    clauses.push(`"locationId" IN (${locationIds.map(() => "?").join(",")})`);
-    params.push(...locationIds);
+  if (roomIds.length) {
+    clauses.push(`"locationId" IN (${roomIds.map(() => "?").join(",")})`);
+    params.push(...roomIds);
   }
   if (containerIds.length) {
     clauses.push(`"containerId" IN (${containerIds.map(() => "?").join(",")})`);
@@ -287,7 +269,7 @@ export async function prepareSubtreeCleanup(subtree: Subtree) {
   return async function cleanup() {
     await Promise.all(storedPaths.map((p) => deleteAttachmentFile(p)));
     await Promise.all([
-      ...locationIds.map((id) => removeEntityFromIndex("LOCATION", id)),
+      ...roomIds.map((id) => removeEntityFromIndex("LOCATION", id)),
       ...containerIds.map((id) => removeEntityFromIndex("CONTAINER", id)),
       ...itemIds.map((id) => removeEntityFromIndex("ITEM", id)),
     ]);
