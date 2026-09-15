@@ -12,7 +12,7 @@
 
 services:
   lagerist:
-    image: git.krabe.lol/krabe-lol/lagerist:${LAGERIST_IMAGE_TAG:-latest}
+    image: git.krabe.lol/krabe-lol/lagerist:latest
     pull_policy: always
     ports:
       - "5004:3000"
