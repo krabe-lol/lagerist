@@ -74,6 +74,7 @@ export default function UploadAttachmentForm({
           ref={inputRef}
           type="file"
           accept={ACCEPT[kind].join(",")}
+          capture={kind === "PHOTO" ? "environment" : undefined}
           disabled={isUploading}
           onChange={() => setError(null)}
           className="file-input file-input-bordered file-input-sm"
