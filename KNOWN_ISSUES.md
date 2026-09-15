@@ -8,10 +8,15 @@ Android-Geräten mit wenig freiem Arbeitsspeicher.
 **Status:** Offen. Ein In-Page-Kamera-Fix (`getUserMedia()` statt externer
 App) wurde probeweise gebaut und hätte das Problem für den Kamera-Weg
 strukturell gelöst, wurde aber wieder verworfen zugunsten eines einzigen
-Upload-Buttons, der dem Nutzer den nativen OS-Auswahldialog
-(Kamera/Dateien/Galerie) zeigt — einfachere UX, aber ohne die strukturelle
-Fix-Eigenschaft der In-Page-Kamera. Das Grundproblem (externe App reißt den
-Tab in den Hintergrund) bleibt für Kamera *und* Galerie bestehen, siehe
+Upload-Buttons ohne `capture`-Attribut, der eigentlich den nativen
+OS-Auswahldialog (Kamera/Dateien/Galerie) zeigen sollte. Auf einem echten
+Android-Gerät zeigte sich aber: ohne `capture` öffnet der Browser dort nicht
+zuverlässig diesen Chooser, sondern direkt die Galerie/Dateiauswahl — die
+Kamera-Option war so praktisch nicht mehr erreichbar. Daher zurück auf zwei
+getrennte Buttons ("Kamera" mit `capture="environment"`, "Dateien" ohne),
+die die Wahl explizit vorab abfragen statt sich auf den (browser-/
+geräteabhängigen) nativen Chooser zu verlassen. Das Grundproblem (externe
+App reißt den Tab in den Hintergrund) bleibt für beide Wege bestehen, siehe
 unten.
 
 ### Symptom

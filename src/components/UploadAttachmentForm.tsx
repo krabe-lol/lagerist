@@ -27,12 +27,27 @@ export default function UploadAttachmentForm({
 
   if (kind === "PHOTO") {
     return (
-      <form action={action} method="POST" encType="multipart/form-data">
-        <label className="btn btn-primary btn-sm">
-          Foto hinzufügen
-          <input type="file" name="file" accept={ACCEPT.PHOTO} onChange={onChange} className="sr-only" />
-        </label>
-      </form>
+      <div className="flex items-center gap-2">
+        <form action={action} method="POST" encType="multipart/form-data">
+          <label className="btn btn-primary btn-sm">
+            Kamera
+            <input
+              type="file"
+              name="file"
+              accept={ACCEPT.PHOTO}
+              capture="environment"
+              onChange={onChange}
+              className="sr-only"
+            />
+          </label>
+        </form>
+        <form action={action} method="POST" encType="multipart/form-data">
+          <label className="btn btn-outline btn-sm">
+            Dateien
+            <input type="file" name="file" accept={ACCEPT.PHOTO} onChange={onChange} className="sr-only" />
+          </label>
+        </form>
+      </div>
     );
   }
 

@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.redirect(redirectUrl, { status: 303 });
   }
 
-  const attachment = await prisma.attachment.create({
+  await prisma.attachment.create({
     data: {
       kind,
       filename: result.stored.filename,
