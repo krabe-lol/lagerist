@@ -1,9 +1,6 @@
 import type { EntityType } from "@/lib/constants";
-import {
-  deleteAttachmentAction,
-  setPrimaryPhotoAction,
-  uploadAttachmentAction,
-} from "@/lib/attachment-actions";
+import { deleteAttachmentAction, setPrimaryPhotoAction } from "@/lib/attachment-actions";
+import UploadAttachmentForm from "@/components/UploadAttachmentForm";
 
 interface AttachmentInfo {
   id: string;
@@ -72,21 +69,7 @@ export default function AttachmentSection({
           ))}
           {photos.length === 0 && <p className="text-sm text-base-content/60">Noch keine Fotos.</p>}
         </div>
-        <form action={uploadAttachmentAction} className="flex items-center gap-2">
-          <input type="hidden" name="entityType" value={entityType} />
-          <input type="hidden" name="entityId" value={entityId} />
-          <input type="hidden" name="kind" value="PHOTO" />
-          <input
-            type="file"
-            name="file"
-            accept="image/*"
-            required
-            className="file-input file-input-bordered file-input-sm"
-          />
-          <button className="btn btn-primary btn-sm" type="submit">
-            Foto hochladen
-          </button>
-        </form>
+        <UploadAttachmentForm entityType={entityType} entityId={entityId} kind="PHOTO" />
       </div>
 
       <div>
@@ -115,15 +98,7 @@ export default function AttachmentSection({
           ))}
           {files.length === 0 && <p className="text-sm text-base-content/60">Noch keine Dateien.</p>}
         </ul>
-        <form action={uploadAttachmentAction} className="flex items-center gap-2">
-          <input type="hidden" name="entityType" value={entityType} />
-          <input type="hidden" name="entityId" value={entityId} />
-          <input type="hidden" name="kind" value="FILE" />
-          <input type="file" name="file" required className="file-input file-input-bordered file-input-sm" />
-          <button className="btn btn-primary btn-sm" type="submit">
-            Datei hochladen
-          </button>
-        </form>
+        <UploadAttachmentForm entityType={entityType} entityId={entityId} kind="FILE" />
       </div>
     </div>
   );
