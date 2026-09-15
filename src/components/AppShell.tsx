@@ -23,6 +23,7 @@ const NAV_LINKS_AFTER_SEPARATOR = [
 
 export default function AppShell({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
+  const [searchExpanded, setSearchExpanded] = useState(false);
   const pathname = usePathname();
 
   // Auto-close the mobile drawer whenever a nav link changes the route (Next.js
@@ -54,9 +55,9 @@ export default function AppShell({ children }: { children: ReactNode }) {
           >
             <Menu className="h-5 w-5" />
           </label>
-          <CreateMenu />
+          {!searchExpanded && <CreateMenu />}
           <div className="min-w-0 flex-1">
-            <QuickSearch />
+            <QuickSearch onMobileExpandedChange={setSearchExpanded} />
           </div>
         </header>
         <main className="min-w-0 flex-1 px-4 py-6 sm:px-6 lg:px-12 lg:py-8">{children}</main>
