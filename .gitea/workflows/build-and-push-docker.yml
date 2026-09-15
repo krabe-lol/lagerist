@@ -1,0 +1,88 @@
+name: Build and Push Docker
+
+# Lives under .gitea/workflows (not .github/workflows) — runs on the Gitea
+# mirror, not on GitHub. Deliberately no marketplace actions (actions/checkout,
+# docker/login-action, docker/setup-buildx-action, ...) — confirmed against
+# this runner (see KrabeUI's build-and-push-docker.yml) that those don't work,
+# so everything below is plain shell.
+#
+# One-time setup on the Gitea side:
+#   - Actions enabled for this repo, with a runner labeled "ubuntu-latest" that
+#     can run `docker`.
+#   - A `REGISTRY_PASSWORD` secret (Settings → Actions → Secrets) — a Gitea
+#     access/deploy token with package write access for this repo.
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install tools
+        run: |
+          apt-get update
+          apt-get install -y git curl docker.io
+
+          # `docker.io` (Debian/Ubuntu's distro package) doesn't bundle buildx, and
+          # newer Docker CLIs refuse to fall back to the embedded BuildKit builder
+          # via DOCKER_BUILDKIT=1 alone anymore ("BuildKit is enabled but the
+          # buildx component is missing") — install it as a CLI plugin directly
+          # from GitHub releases instead of pulling in Docker's own apt repo.
+          BUILDX_VERSION=$(curl -sSL https://api.github.com/repos/docker/buildx/releases/latest | grep -oP '"tag_name":\s*"\K[^"]+')
+          mkdir -p ~/.docker/cli-plugins
+          curl -sSL "https://github.com/docker/buildx/releases/download/${BUILDX_VERSION}/buildx-${BUILDX_VERSION}.linux-amd64" -o ~/.docker/cli-plugins/docker-buildx
+          chmod +x ~/.docker/cli-plugins/docker-buildx
+          docker buildx version
+
+      - name: Clone repository
+        env:
+          BUILD_COMMIT: ${{ gitea.sha }}
+        run: |
+          cd /tmp
+          rm -rf lagerist || true
+          git clone http://git.krabe.lol/krabe-lol/lagerist.git
+          cd lagerist
+          git checkout --detach "$BUILD_COMMIT"
+
+      - name: Build Docker image
+        # The Next.js build (npm run build, incl. `prisma generate`) happens
+        # *inside* the image's build stage (see Dockerfile) rather than as a
+        # separate step — this runner only has a working Docker daemon, and
+        # `docker run -v hostpath:...` doesn't work against it (Docker-in-Docker:
+        # bind mounts resolve on the daemon's host, not this job's own
+        # filesystem). `docker build`'s context upload has no such problem, so
+        # a failing build just fails this step directly.
+        #
+        # DOCKER_BUILDKIT=1 switches `docker build` to the daemon's embedded
+        # BuildKit builder (built into Docker Engine since 18.09 — no separate
+        # `buildx` plugin needed) instead of the legacy builder, which the CLI
+        # itself is warning is on its way out.
+        env:
+          DOCKER_BUILDKIT: "1"
+          BUILD_COMMIT: ${{ gitea.sha }}
+        run: |
+          cd /tmp/lagerist
+          SHORT_SHA=$(echo "$BUILD_COMMIT" | cut -c1-7)
+          docker build \
+            -t git.krabe.lol/krabe-lol/lagerist:latest \
+            -t "git.krabe.lol/krabe-lol/lagerist:$SHORT_SHA" \
+            -f Dockerfile .
+
+      - name: Push to registry
+        env:
+          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+          BUILD_COMMIT: ${{ gitea.sha }}
+        run: |
+          if [ -z "$REGISTRY_PASSWORD" ]; then
+            echo "REGISTRY_PASSWORD secret is empty/not set (Settings → Actions → Secrets in Gitea) — aborting." >&2
+            exit 1
+          fi
+          SHORT_SHA=$(echo "$BUILD_COMMIT" | cut -c1-7)
+          echo "$REGISTRY_PASSWORD" | docker login -u krabe.lol --password-stdin git.krabe.lol
+          docker push git.krabe.lol/krabe-lol/lagerist:latest
+          docker push "git.krabe.lol/krabe-lol/lagerist:$SHORT_SHA"
+          docker logout git.krabe.lol || true

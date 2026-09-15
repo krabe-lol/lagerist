@@ -1,0 +1,26 @@
+# Deployment stack file — pulls the image built by
+# .gitea/workflows/build-and-push-docker.yml from the Gitea container
+# registry, instead of building locally (that's what docker-compose.yml is
+# for). Use this on the target host:
+#
+#   docker login git.krabe.lol   # once, if the package is private
+#   docker compose -f stack.yml pull
+#   docker compose -f stack.yml up -d
+#
+# To roll back, set LAGERIST_IMAGE_TAG to a short commit sha instead of
+# "latest" (the workflow pushes both tags) and re-run pull/up.
+
+services:
+  lagerist:
+    image: git.krabe.lol/krabe-lol/lagerist:${LAGERIST_IMAGE_TAG:-latest}
+    pull_policy: always
+    ports:
+      - "5004:3000"
+    environment:
+      - DATABASE_URL=file:./data/lagerist.db
+    volumes:
+      - lagerist_data:/app/data
+    restart: unless-stopped
+
+volumes:
+  lagerist_data:
