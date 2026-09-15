@@ -26,7 +26,12 @@ export function entityPath(type: EntityType, id: string): string {
   return `/${ENTITY_ROUTE_SEGMENT[type]}/${id}`;
 }
 
-const IMAGE_MIME_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"] as const;
+// HEIC/HEIF (iOS's default photo format) is accepted but converted to JPEG
+// on upload — see saveConvertedHeicFile — since most browsers can't render
+// it inline.
+export const HEIC_MIME_TYPES = ["image/heic", "image/heif"] as const;
+
+const IMAGE_MIME_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp", ...HEIC_MIME_TYPES] as const;
 
 export const ALLOWED_UPLOAD_MIME_TYPES: Record<AttachmentKind, readonly string[]> = {
   PHOTO: IMAGE_MIME_TYPES,
@@ -34,8 +39,8 @@ export const ALLOWED_UPLOAD_MIME_TYPES: Record<AttachmentKind, readonly string[]
 };
 
 export const UPLOAD_REJECT_MESSAGE: Record<AttachmentKind, string> = {
-  PHOTO: "Nur Bilddateien (JPEG, PNG, GIF, WebP) sind als Foto erlaubt.",
-  FILE: "Nur PDF- oder Bilddateien (JPEG, PNG, GIF, WebP) sind als Dateianhang erlaubt.",
+  PHOTO: "Nur Bilddateien (JPEG, PNG, GIF, WebP, HEIC) sind als Foto erlaubt.",
+  FILE: "Nur PDF- oder Bilddateien (JPEG, PNG, GIF, WebP, HEIC) sind als Dateianhang erlaubt.",
 };
 
 export const MAX_UPLOAD_SIZE_BYTES = 500 * 1024 * 1024;

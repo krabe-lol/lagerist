@@ -3,12 +3,13 @@ import { revalidatePath } from "next/cache";
 import { Readable } from "node:stream";
 import Busboy from "busboy";
 import { prisma } from "@/lib/db";
-import { FileTooLargeError, saveUploadedFile, type StoredFile } from "@/lib/attachments";
+import { FileTooLargeError, saveConvertedHeicFile, saveUploadedFile, type StoredFile } from "@/lib/attachments";
 import {
   ALLOWED_UPLOAD_MIME_TYPES,
   ATTACHMENT_KINDS,
   ENTITY_COLUMN,
   ENTITY_TYPES,
+  HEIC_MIME_TYPES,
   MAX_UPLOAD_SIZE_BYTES,
   UPLOAD_REJECT_MESSAGE,
   entityPath,
@@ -62,7 +63,10 @@ export async function POST(request: NextRequest) {
       }
 
       settled = true;
-      saveUploadedFile(fileStream, info.filename, info.mimeType, MAX_UPLOAD_SIZE_BYTES)
+      const save = (HEIC_MIME_TYPES as readonly string[]).includes(info.mimeType)
+        ? saveConvertedHeicFile(fileStream, info.filename, MAX_UPLOAD_SIZE_BYTES)
+        : saveUploadedFile(fileStream, info.filename, info.mimeType, MAX_UPLOAD_SIZE_BYTES);
+      save
         .then((stored) => resolve({ ok: true, stored }))
         .catch((err) => {
           if (err instanceof FileTooLargeError) {

@@ -1,10 +1,11 @@
 import { createWriteStream } from "node:fs";
-import { mkdir, unlink } from "node:fs/promises";
+import { mkdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { Transform } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import type { Readable } from "node:stream";
+import convertHeic from "heic-convert";
 
 const DATA_DIR = process.env.LAGERIST_DATA_DIR ?? path.join(process.cwd(), "data");
 const UPLOADS_DIR = path.join(DATA_DIR, "uploads");
@@ -64,6 +65,35 @@ export async function saveUploadedFile(
     filename,
     mimeType: mimeType || "application/octet-stream",
     size,
+  };
+}
+
+// HEIC/HEIF (iOS's default photo format) isn't renderable inline by most
+// browsers, so we convert it to JPEG on upload instead of storing it as-is.
+// heic-convert needs the whole file in memory to decode it — unlike
+// saveUploadedFile, this can't stream straight to disk — so the size limit
+// is enforced while buffering instead of while writing.
+export async function saveConvertedHeicFile(source: Readable, filename: string, maxBytes: number): Promise<StoredFile> {
+  await mkdir(UPLOADS_DIR, { recursive: true });
+
+  const chunks: Buffer[] = [];
+  let size = 0;
+  for await (const chunk of source as AsyncIterable<Buffer>) {
+    size += chunk.length;
+    if (size > maxBytes) throw new FileTooLargeError(maxBytes);
+    chunks.push(chunk);
+  }
+
+  const jpeg = await convertHeic({ buffer: Buffer.concat(chunks), format: "JPEG", quality: 0.9 });
+
+  const storedPath = `${randomUUID()}.jpg`;
+  await writeFile(path.join(UPLOADS_DIR, storedPath), jpeg);
+
+  return {
+    storedPath,
+    filename: `${path.basename(filename, path.extname(filename))}.jpg`,
+    mimeType: "image/jpeg",
+    size: jpeg.length,
   };
 }
 

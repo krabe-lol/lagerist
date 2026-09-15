@@ -1,12 +1,9 @@
 "use client";
 
 import type { FormEvent } from "react";
-import type { AttachmentKind, EntityType } from "@/lib/constants";
+import { ALLOWED_UPLOAD_MIME_TYPES, type AttachmentKind, type EntityType } from "@/lib/constants";
 
-const ACCEPT: Record<AttachmentKind, string> = {
-  PHOTO: "image/jpeg,image/png,image/gif,image/webp",
-  FILE: "image/jpeg,image/png,image/gif,image/webp,application/pdf",
-};
+const FILE_ACCEPT = ALLOWED_UPLOAD_MIME_TYPES.FILE.join(",");
 
 export default function UploadAttachmentForm({
   entityType,
@@ -27,39 +24,27 @@ export default function UploadAttachmentForm({
 
   if (kind === "PHOTO") {
     return (
-      <div className="flex items-center gap-2">
-        <form action={action} method="POST" encType="multipart/form-data">
-          <label className="btn btn-primary btn-sm">
-            Kamera
-            <input
-              type="file"
-              name="file"
-              accept={ACCEPT.PHOTO}
-              capture="environment"
-              onChange={onChange}
-              className="sr-only"
-            />
-          </label>
-        </form>
+      <>
         <form action={action} method="POST" encType="multipart/form-data">
           <label className="btn btn-outline btn-sm">
-            Dateien
-            <input type="file" name="file" accept={ACCEPT.PHOTO} onChange={onChange} className="sr-only" />
+            Foto aufnehmen
+            <input type="file" name="file" accept="image/*" capture="environment" onChange={onChange} className="sr-only" />
+          </label>
+          <label className="btn btn-outline btn-sm ml-2">
+            Foto hinzufügen
+            <input type="file" name="file" accept="image/*" onChange={onChange} className="sr-only" />
           </label>
         </form>
-      </div>
+      </>
     );
   }
 
   return (
     <form action={action} method="POST" encType="multipart/form-data">
-      <input
-        type="file"
-        name="file"
-        accept={ACCEPT.FILE}
-        onChange={onChange}
-        className="file-input file-input-bordered file-input-sm"
-      />
+      <label className="btn btn-outline btn-sm">
+        Datei(en) hinzufügen
+        <input type="file" name="file" accept={FILE_ACCEPT} onChange={onChange} className="sr-only" />
+      </label>
     </form>
   );
 }
