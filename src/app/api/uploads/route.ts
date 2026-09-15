@@ -41,6 +41,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Keine Datei erhalten." }, { status: 400 });
   }
 
+  // The in-page camera (CameraCapture) uploads a captured frame via fetch()
+  // instead of a native form submission, since by then the whole capture
+  // already happened without the tab ever leaving the page — no native-form
+  // reliability concern applies there. It asks for a JSON response instead
+  // of the redirect a real <form> submission expects.
+  const wantsJson = request.headers.get("accept")?.includes("application/json") ?? false;
+
   const maxMb = MAX_UPLOAD_SIZE_BYTES / (1024 * 1024);
   const nodeBody = Readable.fromWeb(request.body as import("node:stream/web").ReadableStream<Uint8Array>);
 
@@ -93,6 +100,9 @@ export async function POST(request: NextRequest) {
   const errorParam = kind === "PHOTO" ? "photoUploadError" : "fileUploadError";
 
   if (!result.ok) {
+    if (wantsJson) {
+      return NextResponse.json({ error: result.error }, { status: result.status });
+    }
     const redirectUrl = new URL(entityPath(entityType, entityId), request.url);
     redirectUrl.searchParams.set(errorParam, result.error);
     return NextResponse.redirect(redirectUrl, { status: 303 });
@@ -128,5 +138,8 @@ export async function POST(request: NextRequest) {
 
   revalidatePath(entityPath(entityType, entityId));
 
+  if (wantsJson) {
+    return NextResponse.json({ id: attachment.id });
+  }
   return NextResponse.redirect(new URL(entityPath(entityType, entityId), request.url), { status: 303 });
 }
