@@ -5,6 +5,9 @@ services:
       - "3000:3000"
     environment:
       - DATABASE_URL=file:./data/lagerist.db
+      # See stack.yml for why this matters once a reverse proxy is involved.
+      # Not needed for plain local access via http://localhost:3000.
+      # - PUBLIC_APP_URL=https://lagerist.example.com
     volumes:
       - ./data:/app/data
     restart: unless-stopped

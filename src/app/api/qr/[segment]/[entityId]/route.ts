@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import QRCode from "qrcode";
 import { ENTITY_ROUTE_SEGMENT } from "@/lib/constants";
+import { resolveOrigin } from "@/lib/site-url";
 
 const VALID_SEGMENTS = new Set(Object.values(ENTITY_ROUTE_SEGMENT));
 
@@ -13,7 +14,7 @@ export async function GET(
     return NextResponse.json({ error: "Unbekannter Entity-Typ" }, { status: 400 });
   }
 
-  const targetUrl = `${request.nextUrl.origin}/${segment}/${entityId}`;
+  const targetUrl = `${resolveOrigin(request)}/${segment}/${entityId}`;
   const png = await QRCode.toBuffer(targetUrl, { width: 320, margin: 1 });
 
   return new NextResponse(new Uint8Array(png), {

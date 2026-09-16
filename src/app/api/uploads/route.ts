@@ -4,6 +4,7 @@ import { Readable } from "node:stream";
 import Busboy from "busboy";
 import { prisma } from "@/lib/db";
 import { FileTooLargeError, saveConvertedHeicFile, saveUploadedFile, type StoredFile } from "@/lib/attachments";
+import { resolveOrigin } from "@/lib/site-url";
 import {
   ALLOWED_UPLOAD_MIME_TYPES,
   ATTACHMENT_KINDS,
@@ -95,9 +96,10 @@ export async function POST(request: NextRequest) {
   });
 
   const errorParam = kind === "PHOTO" ? "photoUploadError" : "fileUploadError";
+  const origin = resolveOrigin(request);
 
   if (!result.ok) {
-    const redirectUrl = new URL(entityPath(entityType, entityId), request.url);
+    const redirectUrl = new URL(entityPath(entityType, entityId), origin);
     redirectUrl.searchParams.set(errorParam, result.error);
     return NextResponse.redirect(redirectUrl, { status: 303 });
   }
@@ -115,5 +117,5 @@ export async function POST(request: NextRequest) {
 
   revalidatePath(entityPath(entityType, entityId));
 
-  return NextResponse.redirect(new URL(entityPath(entityType, entityId), request.url), { status: 303 });
+  return NextResponse.redirect(new URL(entityPath(entityType, entityId), origin), { status: 303 });
 }

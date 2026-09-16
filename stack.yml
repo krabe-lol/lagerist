@@ -18,6 +18,12 @@ services:
       - "5004:3000"
     environment:
       - DATABASE_URL=file:./data/lagerist.db
+      # The public URL this instance is actually reachable at — used to build
+      # absolute links (upload redirects, QR codes) instead of trusting the
+      # incoming request's Host header, which a reverse proxy in front of
+      # this container may not forward correctly (seeing "localhost" here
+      # breaks both). Adjust to your real domain/port.
+      - PUBLIC_APP_URL=https://lagerist.example.com
     volumes:
       - lagerist_data:/app/data
     restart: unless-stopped
