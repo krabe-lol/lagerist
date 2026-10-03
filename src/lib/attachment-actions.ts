@@ -12,8 +12,9 @@ export async function deleteAttachmentAction(formData: FormData) {
 
   const attachment = await prisma.attachment.findUnique({ where: { id: attachmentId } });
   if (attachment) {
-    await prisma.attachment.delete({ where: { id: attachmentId } });
-    await deleteAttachmentFile(attachment.storedPath);
+    // deleteMany: someone else deleting it at the same moment isn't an error.
+    const { count } = await prisma.attachment.deleteMany({ where: { id: attachmentId } });
+    if (count > 0) await deleteAttachmentFile(attachment.storedPath);
   }
 
   revalidatePath(entityPath(entityType, entityId));

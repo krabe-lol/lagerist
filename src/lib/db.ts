@@ -8,9 +8,11 @@ const globalForPrisma = globalThis as unknown as {
 const databaseUrl = process.env.DATABASE_URL ?? "file:./data/lagerist.db";
 const adapter = new PrismaBetterSqlite3({ url: databaseUrl.replace(/^file:/, "") });
 
-// Unfiltered client — sees draft rows (confirmed: false) too. Only the
-// draft lifecycle itself (see lib/drafts.ts) should ever import this;
-// everything else should use the default export below.
+// Unfiltered client — sees draft rows (confirmed: false) too. Only code
+// that has to tell drafts apart from missing rows should import this: the
+// draft lifecycle (lib/drafts.ts, lib/draft-cleanup.ts), save conflict
+// checks (lib/versioning.ts), uploads and the cleanup page (lib/orphans.ts).
+// Everything else should use the default export below.
 export const prismaRaw = globalForPrisma.prismaRaw ?? new PrismaClient({ adapter });
 
 if (process.env.NODE_ENV !== "production") {

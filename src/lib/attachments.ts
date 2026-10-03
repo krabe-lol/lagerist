@@ -1,5 +1,5 @@
 import { createWriteStream } from "node:fs";
-import { mkdir, unlink, writeFile } from "node:fs/promises";
+import { mkdir, readdir, stat, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { Transform } from "node:stream";
@@ -99,6 +99,33 @@ export async function saveConvertedHeicFile(source: Readable, filename: string, 
 
 export function absoluteAttachmentPath(storedPath: string): string {
   return path.join(UPLOADS_DIR, storedPath);
+}
+
+export interface UploadFileInfo {
+  storedPath: string;
+  size: number;
+  modifiedAt: Date;
+}
+
+/** Every file currently in the uploads directory (for the cleanup page). */
+export async function listUploadFiles(): Promise<UploadFileInfo[]> {
+  const names = await readdir(UPLOADS_DIR).catch(() => [] as string[]);
+  const files = await Promise.all(
+    names
+      .filter((name) => !name.startsWith("."))
+      .map(async (name) => {
+        const info = await stat(path.join(UPLOADS_DIR, name)).catch(() => null);
+        return info?.isFile() ? { storedPath: name, size: info.size, modifiedAt: info.mtime } : null;
+      })
+  );
+  return files.filter((f): f is UploadFileInfo => f !== null);
+}
+
+export async function attachmentFileExists(storedPath: string): Promise<boolean> {
+  return stat(absoluteAttachmentPath(storedPath)).then(
+    (info) => info.isFile(),
+    () => false
+  );
 }
 
 export async function deleteAttachmentFile(storedPath: string): Promise<void> {

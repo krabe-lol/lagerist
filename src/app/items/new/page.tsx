@@ -1,13 +1,14 @@
 import { prisma } from "@/lib/db";
 import NewItemClient from "@/app/items/NewItemClient";
 import PageHeader from "@/components/PageHeader";
+import DraftAttachments from "@/components/DraftAttachments";
 
 export default async function NewItemPage({
   searchParams,
 }: {
-  searchParams: Promise<{ roomId?: string; containerId?: string }>;
+  searchParams: Promise<{ roomId?: string; containerId?: string; draft?: string; photoUploadError?: string; fileUploadError?: string }>;
 }) {
-  const { roomId, containerId } = await searchParams;
+  const { roomId, containerId, draft, photoUploadError, fileUploadError } = await searchParams;
 
   const [rooms, containers] = await Promise.all([
     prisma.location.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
@@ -30,6 +31,17 @@ export default async function NewItemPage({
         }))}
         initialRoomId={roomId}
         initialContainerId={containerId}
+        resumeDraftId={draft}
+        attachments={
+          draft && (
+            <DraftAttachments
+              entityType="ITEM"
+              draftId={draft}
+              photoUploadError={photoUploadError}
+              fileUploadError={fileUploadError}
+            />
+          )
+        }
       />
     </div>
   );

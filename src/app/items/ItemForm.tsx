@@ -1,4 +1,8 @@
+"use client";
+
+import type { ReactNode } from "react";
 import FormField from "@/components/FormField";
+import VersionedForm from "@/components/VersionedForm";
 import PlaceOptions, { type PlaceRoomOption, type PlaceContainerOption } from "@/components/PlaceOptions";
 import UploadAttachmentForm from "@/components/UploadAttachmentForm";
 import { updateItemAction } from "@/app/items/itemActions";
@@ -10,6 +14,7 @@ interface ExistingItem {
   quantity: number;
   locationId: string | null;
   containerId: string | null;
+  updatedAt: Date;
 }
 
 export default function ItemForm({
@@ -21,6 +26,7 @@ export default function ItemForm({
   initialRoomId,
   initialContainerId,
   onCancel,
+  attachments,
 }: {
   mode: "new" | "edit";
   item: ExistingItem;
@@ -30,6 +36,9 @@ export default function ItemForm({
   initialRoomId?: string;
   initialContainerId?: string;
   onCancel?: () => void;
+  /** Replaces the bare upload buttons, e.g. with an AttachmentSection listing
+   * what's already been uploaded to a resumed draft. */
+  attachments?: ReactNode;
 }) {
   const initialPlace = item.locationId
     ? `room:${item.locationId}`
@@ -43,8 +52,13 @@ export default function ItemForm({
 
   return (
     <div className="flex max-w-2xl flex-col gap-4">
-      <form action={updateItemAction} className="flex flex-col gap-4">
-        <input type="hidden" name="id" value={item.id} />
+      <VersionedForm
+        action={updateItemAction}
+        entity="item"
+        id={item.id}
+        updatedAt={item.updatedAt}
+        className="flex flex-col gap-4"
+      >
 
         <FormField label="Name">
           <input
@@ -109,13 +123,15 @@ export default function ItemForm({
             </button>
           )}
         </div>
-      </form>
+      </VersionedForm>
 
       <FormField label="Fotos & Dateien" as="div">
-        <div className="flex items-center gap-2">
-          <UploadAttachmentForm entityType="ITEM" entityId={item.id} kind="PHOTO" />
-          <UploadAttachmentForm entityType="ITEM" entityId={item.id} kind="FILE" />
-        </div>
+        {attachments ?? (
+          <div className="flex items-center gap-2">
+            <UploadAttachmentForm entityType="ITEM" entityId={item.id} kind="PHOTO" />
+            <UploadAttachmentForm entityType="ITEM" entityId={item.id} kind="FILE" />
+          </div>
+        )}
       </FormField>
     </div>
   );

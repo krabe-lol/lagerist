@@ -10,26 +10,25 @@ interface IndexableEntity {
 }
 
 /** Inserts or updates the full-text search row for one entity. Delete-then-insert
- * because FTS5 has no UNIQUE/PRIMARY KEY to upsert against. */
+ * because FTS5 has no UNIQUE/PRIMARY KEY to upsert against — in one
+ * transaction, so two concurrent reindexes can't both insert a row. */
 export async function indexEntity(type: EntityType, id: string, entity: IndexableEntity) {
   const tagsText = entity.tagNames.join(" ");
   const fieldsText = entity.extraText ?? "";
 
-  await prisma.$executeRawUnsafe(
-    `DELETE FROM search_index WHERE entity_type = ? AND entity_id = ?`,
-    type,
-    id
-  );
-  await prisma.$executeRawUnsafe(
-    `INSERT INTO search_index (entity_type, entity_id, name, description, tags_text, fields_text)
-     VALUES (?, ?, ?, ?, ?, ?)`,
-    type,
-    id,
-    entity.name,
-    entity.description ?? "",
-    tagsText,
-    fieldsText
-  );
+  await prisma.$transaction([
+    prisma.$executeRawUnsafe(`DELETE FROM search_index WHERE entity_type = ? AND entity_id = ?`, type, id),
+    prisma.$executeRawUnsafe(
+      `INSERT INTO search_index (entity_type, entity_id, name, description, tags_text, fields_text)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      type,
+      id,
+      entity.name,
+      entity.description ?? "",
+      tagsText,
+      fieldsText
+    ),
+  ]);
 }
 
 export async function removeEntityFromIndex(type: EntityType, id: string) {

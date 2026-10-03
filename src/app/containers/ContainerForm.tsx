@@ -1,4 +1,8 @@
+"use client";
+
+import type { ReactNode } from "react";
 import FormField from "@/components/FormField";
+import VersionedForm from "@/components/VersionedForm";
 import ContainerTemplateFields, {
   type ContainerTemplateOption,
 } from "@/components/ContainerTemplateFields";
@@ -19,6 +23,7 @@ interface ExistingContainer {
   templateId: string | null;
   dimensions: string | null;
   volume: string | null;
+  updatedAt: Date;
 }
 
 export default function ContainerForm({
@@ -28,6 +33,7 @@ export default function ContainerForm({
   templates,
   initialRoomId,
   onCancel,
+  attachments,
 }: {
   mode: "new" | "edit";
   container: ExistingContainer;
@@ -35,11 +41,19 @@ export default function ContainerForm({
   templates: ContainerTemplateOption[];
   initialRoomId?: string;
   onCancel?: () => void;
+  /** Replaces the bare upload buttons, e.g. with an AttachmentSection listing
+   * what's already been uploaded to a resumed draft. */
+  attachments?: ReactNode;
 }) {
   return (
     <div className="flex max-w-2xl flex-col gap-4">
-      <form action={updateContainerAction} className="flex flex-col gap-4">
-        <input type="hidden" name="id" value={container.id} />
+      <VersionedForm
+        action={updateContainerAction}
+        entity="container"
+        id={container.id}
+        updatedAt={container.updatedAt}
+        className="flex flex-col gap-4"
+      >
 
         <p className="text-sm text-base-content/60">
           {mode === "new" ? "Wird angelegt als" : "Nummer"}{" "}
@@ -91,13 +105,15 @@ export default function ContainerForm({
             </button>
           )}
         </div>
-      </form>
+      </VersionedForm>
 
       <FormField label="Fotos & Dateien" as="div">
-        <div className="flex items-center gap-2">
-          <UploadAttachmentForm entityType="CONTAINER" entityId={container.id} kind="PHOTO" />
-          <UploadAttachmentForm entityType="CONTAINER" entityId={container.id} kind="FILE" />
-        </div>
+        {attachments ?? (
+          <div className="flex items-center gap-2">
+            <UploadAttachmentForm entityType="CONTAINER" entityId={container.id} kind="PHOTO" />
+            <UploadAttachmentForm entityType="CONTAINER" entityId={container.id} kind="FILE" />
+          </div>
+        )}
       </FormField>
     </div>
   );

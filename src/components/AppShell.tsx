@@ -3,7 +3,7 @@
 import { useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Forklift, Home, MapPin, Box, LayoutGrid, ClipboardList, ScanLine, Tag, Menu } from "lucide-react";
+import { Forklift, Home, MapPin, Box, LayoutGrid, ClipboardList, ScanLine, Tag, Menu, BrushCleaning } from "lucide-react";
 import CreateMenu from "@/components/CreateMenu";
 import QuickSearch from "@/components/QuickSearch";
 import packageJson from "../../package.json";
@@ -19,6 +19,7 @@ const NAV_LINKS_AFTER_SEPARATOR = [
   { href: "/templates", label: "Vorlagen", icon: ClipboardList },
   { href: "/scan", label: "QR-Scan", icon: ScanLine },
   { href: "/labels", label: "Label-Druck", icon: Tag },
+  { href: "/cleanup", label: "Aufräumen", icon: BrushCleaning },
 ];
 
 export default function AppShell({ children }: { children: ReactNode }) {

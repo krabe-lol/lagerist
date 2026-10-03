@@ -9,6 +9,7 @@ import AttachmentSection from "@/components/AttachmentSection";
 import QrCodeBlock from "@/components/QrCodeBlock";
 import LocationChainTrail from "@/components/LocationChainTrail";
 import PlaceQuickPicker from "@/components/PlaceQuickPicker";
+import QuantityStepper from "@/components/QuantityStepper";
 import { LayoutGrid } from "lucide-react";
 import { deleteItemAction, updateItemLocationAction } from "@/app/items/itemActions";
 
@@ -69,6 +70,10 @@ export default async function ItemDetailPage({
         <h2 className="mb-2 font-semibold">Details</h2>
         <DetailList
           rows={[
+            {
+              label: "Menge",
+              value: <QuantityStepper itemId={item.id} quantity={item.quantity} />,
+            },
             {
               label: "Lage",
               value: (

@@ -4,27 +4,25 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { collectRoomSubtree, prepareSubtreeCleanup, reindexEntity } from "@/lib/entities";
+import { failedSaveState, versionGuard, type SaveState } from "@/lib/versioning";
 
 // Also used to finalize a draft room (see lib/drafts.ts) — "New Room" edits
 // the same freshly-created draft row this form always has an id for, and
-// this is what flips it from confirmed: false to true.
-export async function updateRoomAction(formData: FormData) {
+// this is what flips it from confirmed: false to true. Version-checked
+// like updateItemAction (see lib/versioning.ts).
+export async function updateRoomAction(_prev: SaveState, formData: FormData): Promise<SaveState> {
   const id = formData.get("id") as string;
   const name = formData.get("name") as string;
   const description = (formData.get("description") as string) || null;
   const parentId = (formData.get("parentId") as string) || null;
 
-  const room = await prisma.location.update({
-    where: { id },
+  const { count } = await prisma.location.updateMany({
+    where: { id, ...versionGuard(formData) },
     data: { name, description, parentId, confirmed: true },
   });
+  if (count === 0) return failedSaveState("location", id);
 
-  await reindexEntity({
-    type: "LOCATION",
-    id,
-    name: room.name,
-    description: room.description,
-  });
+  await reindexEntity({ type: "LOCATION", id, name, description });
 
   revalidatePath("/");
   revalidatePath(`/rooms/${id}`);
@@ -38,8 +36,8 @@ export async function deleteRoomAction(formData: FormData) {
 
   const subtree = await collectRoomSubtree(id);
   const cleanup = await prepareSubtreeCleanup(subtree);
-  await prisma.location.delete({ where: { id } });
-  await cleanup();
+  const { count } = await prisma.location.deleteMany({ where: { id } });
+  if (count > 0) await cleanup();
 
   revalidatePath("/");
   revalidatePath("/rooms");

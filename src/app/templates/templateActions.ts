@@ -21,7 +21,8 @@ export async function updateTemplateAction(formData: FormData) {
   const dimensions = (formData.get("dimensions") as string) || null;
   const volume = (formData.get("volume") as string) || null;
 
-  await prisma.containerTemplate.update({ where: { id }, data: { name, dimensions, volume } });
+  // updateMany/deleteMany: a template someone else just deleted is simply gone.
+  await prisma.containerTemplate.updateMany({ where: { id }, data: { name, dimensions, volume } });
 
   revalidatePath("/templates");
   redirect("/templates");
@@ -29,6 +30,6 @@ export async function updateTemplateAction(formData: FormData) {
 
 export async function deleteTemplateAction(formData: FormData) {
   const id = formData.get("id") as string;
-  await prisma.containerTemplate.delete({ where: { id } });
+  await prisma.containerTemplate.deleteMany({ where: { id } });
   revalidatePath("/templates");
 }

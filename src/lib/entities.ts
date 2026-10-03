@@ -19,10 +19,12 @@ export async function setItemTags(itemId: string, rawNames: string[]) {
   );
   const tagIds = tags.map((t) => t.id);
 
-  await prisma.itemTag.deleteMany({ where: { itemId } });
-  if (tagIds.length > 0) {
-    await prisma.itemTag.createMany({ data: tagIds.map((tagId) => ({ itemId, tagId })) });
-  }
+  // One transaction, so two saves of the same item at once can't interleave
+  // into a duplicate (itemId, tagId) insert.
+  await prisma.$transaction([
+    prisma.itemTag.deleteMany({ where: { itemId } }),
+    prisma.itemTag.createMany({ data: tagIds.map((tagId) => ({ itemId, tagId })) }),
+  ]);
 }
 
 export async function getItemTags(itemId: string): Promise<string[]> {
@@ -223,7 +225,7 @@ async function itemSubtreeIdsFromSeeds(seedIds: string[]): Promise<string[]> {
   );
 }
 
-interface Subtree {
+export interface Subtree {
   roomIds: string[];
   containerIds: string[];
   itemIds: string[];

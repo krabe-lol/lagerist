@@ -1,4 +1,8 @@
+"use client";
+
+import type { ReactNode } from "react";
 import FormField from "@/components/FormField";
+import VersionedForm from "@/components/VersionedForm";
 import UploadAttachmentForm from "@/components/UploadAttachmentForm";
 import { updateRoomAction } from "@/app/rooms/roomActions";
 
@@ -12,6 +16,7 @@ interface ExistingRoom {
   name: string;
   description: string | null;
   parentId: string | null;
+  updatedAt: Date;
 }
 
 export default function RoomForm({
@@ -20,17 +25,26 @@ export default function RoomForm({
   parentOptions,
   initialParentId,
   onCancel,
+  attachments,
 }: {
   mode: "new" | "edit";
   room: ExistingRoom;
   parentOptions: RoomOption[];
   initialParentId?: string;
   onCancel?: () => void;
+  /** Replaces the bare upload buttons, e.g. with an AttachmentSection listing
+   * what's already been uploaded to a resumed draft. */
+  attachments?: ReactNode;
 }) {
   return (
     <div className="flex max-w-2xl flex-col gap-4">
-      <form action={updateRoomAction} className="flex flex-col gap-4">
-        <input type="hidden" name="id" value={room.id} />
+      <VersionedForm
+        action={updateRoomAction}
+        entity="location"
+        id={room.id}
+        updatedAt={room.updatedAt}
+        className="flex flex-col gap-4"
+      >
 
         <FormField label="Name">
           <input
@@ -76,13 +90,15 @@ export default function RoomForm({
             </button>
           )}
         </div>
-      </form>
+      </VersionedForm>
 
       <FormField label="Fotos & Dateien" as="div">
-        <div className="flex items-center gap-2">
-          <UploadAttachmentForm entityType="LOCATION" entityId={room.id} kind="PHOTO" />
-          <UploadAttachmentForm entityType="LOCATION" entityId={room.id} kind="FILE" />
-        </div>
+        {attachments ?? (
+          <div className="flex items-center gap-2">
+            <UploadAttachmentForm entityType="LOCATION" entityId={room.id} kind="PHOTO" />
+            <UploadAttachmentForm entityType="LOCATION" entityId={room.id} kind="FILE" />
+          </div>
+        )}
       </FormField>
     </div>
   );

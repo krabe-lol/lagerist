@@ -1,5 +1,5 @@
 import { Trash2 } from "lucide-react";
-import type { EntityType } from "@/lib/constants";
+import { formatSize, type EntityType } from "@/lib/constants";
 import { deleteAttachmentAction } from "@/lib/attachment-actions";
 import PhotoGallery from "@/components/PhotoGallery";
 import UploadAttachmentForm from "@/components/UploadAttachmentForm";
@@ -11,12 +11,6 @@ interface AttachmentInfo {
   filename: string;
   mimeType: string;
   size: number;
-}
-
-function formatSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 export default function AttachmentSection({
